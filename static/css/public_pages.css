@@ -1,0 +1,266 @@
+.public-page {
+    width: min(1240px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 34px 0 52px;
+}
+
+.public-page-heading {
+    margin: 0 0 24px;
+}
+
+.public-page-heading h1,
+.public-offices h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.public-page-heading p {
+    margin: 0;
+    color: #77777b;
+    font-size: 13px;
+}
+
+.public-contact-grid {
+    width: min(900px, 100%);
+    margin: 0;
+    gap: 18px;
+}
+
+.public-contact-grid article {
+    min-width: 0;
+    padding: 20px;
+    background: #f4f4f4;
+}
+
+.public-contact-grid h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+}
+
+.public-contact-grid dl {
+    margin: 0;
+}
+
+.public-contact-grid dt {
+    margin-top: 13px;
+    color: #77777b;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.public-contact-grid dd {
+    margin: 4px 0 0;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #dedde0;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.public-contact-grid dd a:hover,
+.contact-social-links a:hover {
+    color: var(--plum);
+}
+
+.public-offices {
+    margin-top: 34px;
+}
+
+.public-offices h2 {
+    margin-bottom: 16px;
+}
+
+.public-offices .office-browser {
+    width: min(900px, 100%);
+}
+
+.office-empty {
+    margin: 0;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.public-partner-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.public-partner-card {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #f4f4f4;
+}
+
+.public-partner-card > img {
+    width: 100%;
+    aspect-ratio: 2.1 / 1;
+    object-fit: contain;
+    background: #171719;
+}
+
+.public-partner-card > div {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.public-partner-card h2 {
+    margin: 0 0 9px;
+    font-size: 17px;
+    line-height: 1.25;
+}
+
+.public-partner-card p {
+    margin: 0 0 18px;
+    color: #67666c;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.public-partner-card button,
+.public-dialog form button {
+    min-height: 38px;
+    margin-top: auto;
+    padding: 0 16px;
+    border: 0;
+    background: var(--plum);
+    color: white;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.public-partner-card button:hover,
+.public-dialog form button:hover {
+    background: var(--plum-dark);
+}
+
+.public-dialog-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    padding: 20px;
+    display: grid;
+    place-items: center;
+    background: rgb(0 0 0 / 45%);
+}
+
+.public-dialog-backdrop[hidden] {
+    display: none;
+}
+
+.public-dialog {
+    position: relative;
+    width: min(520px, 100%);
+    padding: 30px;
+    background: white;
+}
+
+.public-dialog h2 {
+    margin: 0 36px 8px 0;
+    font-size: 22px;
+}
+
+.public-dialog > p {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.public-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: transparent;
+    color: #171719;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.public-dialog form {
+    display: grid;
+    gap: 8px;
+}
+
+.public-dialog form label {
+    margin-top: 7px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.public-dialog form input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 13px;
+    border: 1px solid #d9d8dc;
+    background: #f7f7f7;
+    font: inherit;
+}
+
+.public-dialog form button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 12px;
+}
+
+.partner-feedback {
+    min-height: 18px;
+    margin: 0;
+    color: var(--plum);
+    font-size: 12px;
+}
+
+.public-footer {
+    align-items: center;
+}
+
+.public-footer > div {
+    display: grid;
+    gap: 6px;
+    color: #55545a;
+    font-size: 11px;
+}
+
+.public-footer > div span {
+    color: #85838a;
+    font-size: 9px;
+}
+
+.public-footer .footer-brand img {
+    width: 86px;
+    height: 45px;
+    object-fit: contain;
+}
+
+@media (max-width: 900px) {
+    .public-partner-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .public-page {
+        width: calc(100% - 32px);
+        padding-top: 26px;
+    }
+
+    .public-contact-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .public-partner-card > img {
+        height: auto;
+    }
+
+    .public-footer {
+        align-items: flex-start;
+    }
+}

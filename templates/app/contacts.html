@@ -1,0 +1,85 @@
+{% extends 'app/base_public.html' %}
+{% load static %}
+{% block title %}Kontaktlar — Xon Saroy{% endblock %}
+{% block content %}
+<main class="public-page contacts-page">
+    <header class="public-page-heading">
+        <h1 data-i18n="pageTitle">Kontaktlar</h1>
+        <p data-i18n="pageDescription">Kompaniya rekvizitlari, aloqa ma’lumotlari va sotuv ofislari</p>
+    </header>
+    <div class="contact-info-grid public-contact-grid">
+        <article>
+            <h2 data-i18n="companyDetails">Kompaniya rekvizitlari</h2>
+            <dl>
+                <dt data-i18n="companyNameLabel">Nomi</dt><dd>"XONSAROY GROUP" MCHJ</dd>
+                <dt data-i18n="taxIdLabel">STIR</dt><dd>308111339</dd>
+                <dt data-i18n="legalAddressLabel">Yuridik manzil</dt>
+                <dd data-i18n="legalAddress">Toshkent shahri, Yunusobod tumani, Axilobod MFY, 13-mavze, 72-uy</dd>
+            </dl>
+        </article>
+        <article>
+            <h2 data-i18n="waysToContact">Bog‘lanish usullari</h2>
+            <dl>
+                <dt data-i18n="phoneLabel">Telefon</dt><dd><a href="tel:+998712007400">+998 71 200 74 00</a></dd>
+                <dt data-i18n="emailLabel">Elektron pochta</dt><dd><a href="mailto:xansarayuz@gmail.com">xansarayuz@gmail.com</a></dd>
+                <dt data-i18n="workingHoursLabel">Ish vaqti</dt><dd>9:00 — 22:00</dd>
+                <dt data-i18n="socialLinksLabel">Ijtimoiy tarmoqlar</dt>
+                <dd class="contact-social-links"><a href="https://t.me/XonSaroy_apartment_bot" target="_blank" rel="noreferrer">Telegram</a><a href="https://www.instagram.com/xonsaroyuz" target="_blank" rel="noreferrer">Instagram</a><a href="https://www.facebook.com/xonsaroyuz" target="_blank" rel="noreferrer">Facebook</a></dd>
+            </dl>
+        </article>
+    </div>
+
+    <section class="public-offices">
+        <h2 data-i18n="officesHeading">Sotuv ofislari</h2>
+        <div class="office-browser">
+            <div class="office-list">
+                {% for office in offices %}
+                    <a class="office-item{% if forloop.first %} is-selected{% endif %}" href="https://www.google.com/maps/search/?api=1&amp;query={{ office.address|urlencode }}" data-map-query="{% if office.latitude and office.longitude %}{{ office.latitude }},{{ office.longitude }}{% else %}{{ office.address }}{% endif %}" target="_blank" rel="noreferrer">
+                        <span class="office-pin" aria-hidden="true">●</span>
+                        <span><strong>{{ office.name }}</strong><small>{{ office.address }}</small></span>
+                    </a>
+                {% empty %}
+                    <p class="office-empty" data-i18n="noOffices">Sotuv ofislari haqida ma’lumot hozircha yo‘q.</p>
+                {% endfor %}
+            </div>
+            <iframe class="office-map" title="Xon Saroy savdo ofislari xaritada" src="https://www.google.com/maps?q={% if offices.0.latitude and offices.0.longitude %}{{ offices.0.latitude }},{{ offices.0.longitude }}{% elif offices.0 %}{{ offices.0.address|urlencode }}{% else %}Tashkent%2C%20Uzbekistan{% endif %}&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const storageKey = 'xonsaroy-lang';
+    const languages = ['uz', 'ru', 'en'];
+    const words = {
+        uz: { navProjects:'Loyihalar', navAbout:'Kompaniya haqida', navNews:'Yangiliklar', navPartners:'Hamkorlar uchun', navContacts:'Kontaktlar', apartmentShortcut:'Xonadon tanlash', pageTitle:'Kontaktlar', pageDescription:'Kompaniya rekvizitlari, aloqa ma’lumotlari va sotuv ofislari', companyDetails:'Kompaniya rekvizitlari', companyNameLabel:'Nomi', taxIdLabel:'STIR', legalAddressLabel:'Yuridik manzil', legalAddress:'Toshkent shahri, Yunusobod tumani, Axilobod MFY, 13-mavze, 72-uy', waysToContact:'Bog‘lanish usullari', phoneLabel:'Telefon', emailLabel:'Elektron pochta', workingHoursLabel:'Ish vaqti', socialLinksLabel:'Ijtimoiy tarmoqlar', officesHeading:'Sotuv ofislari', noOffices:'Sotuv ofislari haqida ma’lumot hozircha yo‘q.', footerContact:'BOG‘LANISH', addressLabel:'MANZIL', footerAddress:'Toshkent tumani, TKAD ko‘chasi, 97', footerCallCenter:'ALOQA MARKAZI', copyright:'© Xon Saroy. Barcha huquqlar himoyalangan.', languageLabel:'Tilni o‘zgartirish' },
+        ru: { navProjects:'Проекты', navAbout:'О компании', navNews:'Новости', navPartners:'Партнёрам', navContacts:'Контакты', apartmentShortcut:'Выбрать квартиру', pageTitle:'Контакты', pageDescription:'Реквизиты компании, контактные данные и офисы продаж', companyDetails:'Реквизиты компании', companyNameLabel:'Название', taxIdLabel:'ИНН', legalAddressLabel:'Юридический адрес', legalAddress:'Ташкент, Юнусабадский район, МФЙ Ахилобод, 13-й квартал, дом 72', waysToContact:'Способы связи', phoneLabel:'Телефон', emailLabel:'Электронная почта', workingHoursLabel:'Часы работы', socialLinksLabel:'Социальные сети', officesHeading:'Офисы продаж', noOffices:'Информация об офисах продаж пока отсутствует.', footerContact:'СВЯЗАТЬСЯ', addressLabel:'АДРЕС', footerAddress:'Ташкентский район, улица ТКАД, 97', footerCallCenter:'КОЛЛ-ЦЕНТР', copyright:'© Xon Saroy. Все права защищены.', languageLabel:'Сменить язык' },
+        en: { navProjects:'Projects', navAbout:'About us', navNews:'News', navPartners:'Partners', navContacts:'Contacts', apartmentShortcut:'Choose an apartment', pageTitle:'Contacts', pageDescription:'Company details, contact information, and sales offices', companyDetails:'Company details', companyNameLabel:'Name', taxIdLabel:'Tax ID', legalAddressLabel:'Legal address', legalAddress:'72, 13th block, Axilobod MFY, Yunusobod district, Tashkent, Uzbekistan', waysToContact:'Ways to contact us', phoneLabel:'Phone', emailLabel:'Email', workingHoursLabel:'Working hours', socialLinksLabel:'Social media', officesHeading:'Sales offices', noOffices:'Sales office information is not available yet.', footerContact:'CONTACT', addressLabel:'ADDRESS', footerAddress:'97 TKAD Street, Tashkent district', footerCallCenter:'CALL CENTER', copyright:'© Xon Saroy. All rights reserved.', languageLabel:'Change language' }
+    };
+    const applyLanguage = (language) => {
+        const dictionary = words[language] || words.uz;
+        localStorage.setItem(storageKey, language);
+        document.documentElement.lang = language;
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+            if (dictionary[element.dataset.i18n]) element.textContent = dictionary[element.dataset.i18n];
+        });
+        const toggle = document.getElementById('lang-toggle');
+        toggle.textContent = language.toUpperCase();
+        toggle.setAttribute('aria-label', dictionary.languageLabel);
+    };
+    const button = document.getElementById('lang-toggle');
+    button.addEventListener('click', () => {
+        const current = localStorage.getItem(storageKey) || 'uz';
+        applyLanguage(languages[(languages.indexOf(current) + 1) % languages.length]);
+    });
+    applyLanguage(languages.includes(localStorage.getItem(storageKey)) ? localStorage.getItem(storageKey) : 'uz');
+    const map = document.querySelector('.office-map');
+    document.querySelectorAll('.office-item').forEach((office) => office.addEventListener('click', () => {
+        document.querySelectorAll('.office-item').forEach((item) => item.classList.remove('is-selected'));
+        office.classList.add('is-selected');
+        if (map && office.dataset.mapQuery) map.src = `https://www.google.com/maps?q=${encodeURIComponent(office.dataset.mapQuery)}&output=embed`;
+    }));
+})();
+</script>
+{% endblock %}

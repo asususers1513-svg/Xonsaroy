@@ -1,0 +1,40 @@
+{% load static %}
+<!doctype html>
+<html lang="uz">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f4f1">
+    <title>{% block title %}Xon Saroy{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/public_pages.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{% url 'home' %}" aria-label="Xon Saroy bosh sahifa">
+            <img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy">
+        </a>
+        <a class="apartment-shortcut" href="{% url 'home' %}#apartments"><span aria-hidden="true">▦</span> <span data-i18n="apartmentShortcut">Xonadon tanlash</span> <span aria-hidden="true">⌄</span></a>
+        <nav class="main-nav" aria-label="Asosiy navigatsiya">
+            <a href="{% url 'home' %}#projects" data-i18n="navProjects">Loyihalar</a>
+            <a href="{% url 'home' %}#about" data-i18n="navAbout">Kompaniya haqida</a>
+            <a href="{% url 'home' %}#materials" data-i18n="navNews">Yangiliklar</a>
+            <a href="{% url 'partners' %}" data-i18n="navPartners">Hamkorlar uchun</a>
+            <a href="{% url 'contacts' %}" data-i18n="navContacts">Kontaktlar</a>
+        </nav>
+        <button type="button" class="language-switch" id="lang-toggle" aria-label="Tilni o‘zgartirish">UZ</button>
+        <a class="header-contact" href="tel:+998712007400">+998 71 200 74 00</a>
+        <a class="phone-icon" href="tel:+998712007400" aria-label="Xon Saroyga qo‘ng‘iroq qilish">⌕</a>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer class="site-footer public-footer">
+        <a class="footer-brand" href="{% url 'home' %}"><img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy"></a>
+        <div><span data-i18n="footerContact">BOG‘LANISH</span><a href="tel:+998712007400">+998 71 200 74 00</a><a href="mailto:xansarayuz@gmail.com">xansarayuz@gmail.com</a></div>
+        <div><span data-i18n="addressLabel">MANZIL</span><strong data-i18n="footerAddress">Toshkent tumani, TKAD ko‘chasi, 97</strong><span data-i18n="footerCallCenter">ALOQA MARKAZI</span><strong>9:00 — 22:00</strong></div>
+        <span data-i18n="copyright">© Xon Saroy. Barcha huquqlar himoyalangan.</span>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

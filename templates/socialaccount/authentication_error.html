@@ -1,0 +1,29 @@
+{% extends "account/base_auth.html" %}
+{% load i18n %}
+
+{% block title %}Xatolik | Xon Saroy{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 20px;">
+    <h2 style="color: #e11d48; margin-bottom: 12px; font-size: 20px; font-weight: bold;">Uchinchi tomon orqali kirishda xatolik yuz berdi</h2>
+    
+    {% if auth_error %}
+        <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 12px; margin: 15px 0; text-align: left; font-size: 13px; color: #9f1239;">
+            <p><strong>Xato turi:</strong> {{ auth_error.code }}</p>
+            {% if auth_error.exception %}
+                <p style="margin-top: 6px;"><strong>Sababi:</strong> {{ auth_error.exception }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <p style="margin-top: 15px; font-size: 14px; color: #64748b;">
+        Iltimos, qaytadan urinib ko'ring yoki login sahifasiga qayting.
+    </p>
+
+    <div style="margin-top: 20px;">
+        <a href="{% url 'login' %}" style="display: inline-block; padding: 10px 20px; background: #5c4683; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            Login sahifasiga qaytish
+        </a>
+    </div>
+</div>
+{% endblock %}

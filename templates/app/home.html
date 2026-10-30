@@ -1,0 +1,1323 @@
+{% load static %}
+<!doctype html>
+<html lang="uz">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f4f1">
+    <title>Xon Saroy — turar joy majmualari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=9">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{% url 'home' %}" aria-label="Xon Saroy bosh sahifa">
+            <img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy">
+        </a>
+        <a class="apartment-shortcut" href="#apartments"><span aria-hidden="true">▦</span> <span data-i18n="apartmentShortcut">Xonadon tanlash</span> <span aria-hidden="true">⌄</span></a>
+        <nav class="main-nav" aria-label="Asosiy navigatsiya">
+            <a href="#projects" id="nav-projects">Loyihalar</a>
+            <a href="#about" id="nav-about">Kompaniya haqida</a>
+            <a href="#materials" id="nav-news">Yangiliklar</a>
+            <a href="{% url 'partners' %}" id="nav-partners">Hamkorlar uchun</a>
+            <a href="{% url 'contacts' %}" id="nav-contacts">Kontaktlar</a>
+        </nav>
+        <button type="button" class="language-switch" id="lang-toggle" aria-label="Tilni o‘zgartirish">UZ</button>
+        <div class="account-actions" style="display:flex;align-items:center;gap:10px;">
+            {% if request.user.is_authenticated %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}" alt="{{ request.user.username }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                        <div style="width:32px;height:32px;border-radius:50%;background:#554274;color:#fff;display:grid;place-items:center;font-weight:bold;font-size:12px;">
+                            {{ request.user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    <span class="account-name" style="font-size:13px;font-weight:600;">
+                        {{ request.user.username }}
+                        <small style="color:#777;font-weight:normal;">({{ request.user.get_role_display }})</small>
+                    </span>
+                    <a class="account-link" href="{% url 'profile' %}" id="profile-link">Profil</a>
+                    <a class="account-link" href="{% url 'logout' %}" style="color:#d9534f;font-weight:bold;" id="logout-link">Chiqish</a>
+                </div>
+            {% else %}
+                <a class="account-link" href="{% url 'login' %}" id="login-link">Kirish</a>
+                <a class="account-link account-link-primary" href="{% url 'register' %}" id="register-link">Ro‘yxatdan o‘tish</a>
+            {% endif %}
+        </div>
+        <a class="header-contact" href="tel:+998712007400">+998 71 200 74 00</a>
+        <a class="phone-icon" href="tel:+998712007400" aria-label="Xon Saroyga qo‘ng‘iroq qilish">⌕</a>
+    </header>
+
+    {% if messages %}
+        <div style="max-width:1240px;margin:15px auto;padding:0 24px;">
+            {% for message in messages %}
+                <div style="padding:12px 18px;background:#eef5ee;border:1px solid #c3e6c3;color:#2b662b;border-radius:8px;font-size:13px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="hero-showcase" data-hero data-initial-slide="0" aria-label="Turar joy loyihalari">
+        <div class="hero-showcase-inner">
+            <div class="hero-layout">
+                <div class="hero-text-col">
+                    <div class="hero-stack">
+                        <div class="hero-slide is-active" data-hero-id="0">
+                            <h1 class="hero-title">Vooha Residence</h1>
+                            <p class="hero-status">32 800 000 so‘mdan</p>
+                            <p class="hero-description" data-i18n="heroDescription0">Toshkent viloyati, Zangiota tumani, Iqbol MFY, Xalqa yo‘li ko‘chasi 101-uy. 1 xonali xonadon.</p>
+                        </div>
+                        <div class="hero-slide" data-hero-id="1" aria-hidden="true">
+                            <h1 class="hero-title">Ramazon Residence</h1>
+                            <p class="hero-status">46 mln so‘mdan</p>
+                            <p class="hero-description" data-i18n="heroDescription1">1 xonali xonadon. Boshlang‘ich to‘lovni 3 ga bo‘lib to‘lash imkoniyati.</p>
+                        </div>
+                        <div class="hero-slide" data-hero-id="2" aria-hidden="true">
+                            <h1 class="hero-title">Vatan Residence</h1>
+                            <p class="hero-status">71 mln so‘mdan</p>
+                            <p class="hero-description" data-i18n="heroDescription2">2 xonali xonadon. Boshlang‘ich to‘lovni 3 ga bo‘lib to‘lang.</p>
+                        </div>
+                        <div class="hero-slide" data-hero-id="3" aria-hidden="true">
+                            <h1 class="hero-title">Muhabbat Shahri</h1>
+                            <p class="hero-status">38 700 000 so‘mdan</p>
+                            <p class="hero-description" data-i18n="heroDescription3">1 xonali xonadon. Boshlang‘ich to‘lovni qulay qismlarga bo‘lib to‘lash mumkin.</p>
+                        </div>
+                        <div class="hero-slide" data-hero-id="4" aria-hidden="true">
+                            <h1 class="hero-title">Vooha Residence</h1>
+                            <p class="hero-status">50 100 000 so‘mdan</p>
+                            <p class="hero-description" data-i18n="heroDescription4">2 xonali xonadon, zamonaviy yashash muhiti va qulay boshlang‘ich to‘lov.</p>
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <a class="hero-cta" href="#contact-question">
+                            <span data-i18n="homeCta">Ariza qoldirish</span>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="hero-pagination" aria-label="Kampaniya slayderi">
+                        <div class="hero-dots">
+                            <button type="button" class="hero-dot is-active" data-hero-goto="0" aria-label="Vooha Residence, 32 million"></button>
+                            <button type="button" class="hero-dot" data-hero-goto="1" aria-label="Ramazon Residence, 46 million"></button>
+                            <button type="button" class="hero-dot" data-hero-goto="2" aria-label="Vatan Residence, 71 million"></button>
+                            <button type="button" class="hero-dot" data-hero-goto="3" aria-label="Muhabbat Shahri, 38 million 700 thousand"></button>
+                            <button type="button" class="hero-dot" data-hero-goto="4" aria-label="Vooha Residence, 50 million 100 thousand"></button>
+                        </div>
+                        <div class="hero-arrows">
+                            <button type="button" class="hero-arrow hero-arrow--prev" data-hero-step="-1" aria-label="Oldingi banner">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <span class="hero-counter" data-hero-counter aria-live="polite">1 / 5</span>
+                            <button type="button" class="hero-arrow hero-arrow--next" data-hero-step="1" aria-label="Keyingi banner">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="hero-media-col" href="#projects" aria-label="Loyihalar bo‘limini ko‘rish">
+                    <div class="hero-media-frame">
+                        <img class="hero-media-image is-active" src="{% static 'img/hero-vooha-328.webp' %}" alt="Vooha Residence, 32 800 000 so‘mdan" loading="eager">
+                        <img class="hero-media-image" src="{% static 'img/hero-ramazon-46.webp' %}" alt="Ramazon Residence, 46 million so‘mdan" loading="lazy">
+                        <img class="hero-media-image" src="{% static 'img/hero-vatan-71.webp' %}" alt="Vatan Residence, 71 million so‘mdan" loading="lazy">
+                        <img class="hero-media-image" src="{% static 'img/hero-muhabbat-387.webp' %}" alt="Muhabbat Shahri, 38 700 000 so‘mdan" loading="lazy">
+                        <img class="hero-media-image" src="{% static 'img/vooha-banner.webp' %}" alt="Vooha Residence, 50 100 000 so‘mdan" loading="lazy">
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section" id="about">
+        <div class="about-copy">
+            <h2>Xon Saroy</h2>
+            <div class="stats-grid">
+                <div><strong>7</strong><span data-i18n="statYears">yildan beri bozorda</span></div>
+                <div><strong>14</strong><span data-i18n="statProjects">muvaffaqiyatli loyiha</span></div>
+                <div><strong>12 000+</strong><span data-i18n="statFamilies">baxtli oila</span></div>
+                <div><strong>600 000 m²</strong><span data-i18n="statArea">loyihalar maydoni</span></div>
+            </div>
+            <p class="about-description" data-i18n="aboutDescription">Xon Saroy — Navoiyda asos solingan va 2019-yildan buyon Toshkentda faoliyat yuritayotgan qurilish kompaniyasi. Bugun minglab oilalar Xon Saroy loyihalarini o‘z uyi sifatida tanlagan. Biz sifatli qurilish va qulay yashash muhitini yaratishga intilamiz.</p>
+        </div>
+        <a class="about-visual" href="https://xonsaroy.uz/" target="_blank" rel="noreferrer" aria-label="Xon Saroy kompaniyasi haqida batafsil">
+            <img src="https://xonsaroy.uz/uploads/site/a77524f966254385a06be6ae8ed2ec2a.webp" alt="Xon Saroy">
+            <span class="video-play" aria-hidden="true">▶</span>
+        </a>
+    </section>
+
+    <main id="projects" class="projects-section">
+        <div class="section-heading">
+            <h1 data-i18n="projectsHeading">Bizning loyihalar</h1>
+        </div>
+
+        <nav class="filters" aria-label="Loyiha holati bo‘yicha saralash">
+            {% for value, label in statuses %}
+                <a class="filter-link{% if selected_status == value %} is-active{% endif %}" data-status="{{ value }}" href="?status={{ value }}#projects"{% if selected_status == value %} aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+        </nav>
+
+        {% if homes %}
+            <div class="project-grid">
+                {% for home in homes %}
+                    <article class="project-card"
+                             data-project-id="{{ home.id }}"
+                             data-project-name="{{ home.name }}"
+                             data-project-category="{{ home.category.name|default:'Turar joy majmuasi' }}"
+                             data-project-status="{{ home.get_status_display }}"
+                             data-project-status-code="{{ home.status }}"
+                             data-project-description="{{ home.description|default:'Zamonaviy arxitektura, qulay infratuzilma, 9 ballik seysmik chidamlilik va yerosti avtoturargohi.' }}"
+                             data-project-image="{% if home.hero_image %}{{ home.hero_image.url }}{% elif home.hero_image_url %}{{ home.hero_image_url }}{% elif home.image %}{{ home.image.url }}{% elif home.image_url %}{{ home.image_url }}{% endif %}"
+                             data-project-apts-count="{{ home.apartments.count }}">
+                        <div class="project-image-wrap">
+                            {% if home.image_url %}
+                                <img class="project-image" src="{{ home.image_url }}" alt="{{ home.name }} turar joy majmuasi" loading="lazy">
+                            {% elif home.image %}
+                                <img class="project-image" src="{{ home.image.url }}" alt="{{ home.name }} turar joy majmuasi" loading="lazy">
+                            {% else %}
+                                <div class="image-placeholder" role="img" aria-label="{{ home.name }} loyihasi rasmi">
+                                    <span>XON SAROY</span>
+                                </div>
+                            {% endif %}
+                            <span class="status-badge status-{{ home.status }}">{{ home.get_status_display }}</span>
+                        </div>
+                        <div class="project-info">
+                            <p class="project-category">{{ home.category.name|default:"Turar joy majmuasi" }}</p>
+                            <h2>{{ home.name }}</h2>
+                            {% if home.description %}<p class="project-description">{{ home.description }}</p>{% endif %}
+                            <div class="project-card-footer" style="margin-top:14px;padding-top:12px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                <button type="button" class="project-details-btn" data-project-link data-i18n="details">Batafsil</button>
+                                <span style="font-size:12px;color:#777;font-weight:600;">{{ home.apartments.count }} ta xonadon</span>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-mark">XS</span>
+                <h2 data-i18n="emptyProjectsTitle">Yangi loyihalar tez kunda</h2>
+                <p data-i18n="emptyProjectsDescription">Xon Saroy yangi turar joy majmualarini bunyod etmoqda.</p>
+            </div>
+        {% endif %}
+
+        <a class="all-projects" href="?status=all#projects"><span data-i18n="allProjects">Barchasini ko‘rsatish</span> <span aria-hidden="true">↗</span></a>
+    </main>
+
+    <section class="contact-section contact-question" id="contact-question">
+        <h2 id="contact-title">Savollaringiz bormi?</h2>
+        <p id="contact-description">Kontaktingizni qoldiring, barcha savollaringizga javob beramiz.</p>
+        <form class="contact-form" id="contact-question-form" method="post" action="{% url 'contact_submit' %}">
+            {% csrf_token %}
+            <input type="hidden" name="telegram_id" id="telegram-id">
+            <input type="hidden" name="telegram_username" id="telegram-username">
+            <label class="visually-hidden" for="question-name" id="field-name-label">Ism</label>
+            <input id="question-name" name="name" placeholder="Ism" data-i18n-placeholder="fieldName" required>
+            <label class="visually-hidden" for="question-phone" id="field-phone-label">Telefon</label>
+            <input id="question-phone" name="phone" type="tel" placeholder="+998" required>
+            <label class="visually-hidden" for="question-message" id="field-message-label">Maslahat yoki kamchilik</label>
+            <textarea id="question-message" name="message" placeholder="Maslahat yoki kamchilikni yozing..." data-i18n-placeholder="fieldMessagePlaceholder" rows="5" required></textarea>
+            <button class="contact-button" type="submit" id="contact-submit" data-i18n="submit">Arizani yuborish</button>
+            <div id="contact-feedback" class="contact-feedback" aria-live="polite"></div>
+        </form>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+        const storageKey = 'xonsaroy-lang';
+        const langOrder = ['uz', 'ru', 'en'];
+        const translations = {
+            uz: {
+                languageLabel: 'Tilni o‘zgartirish',
+                navProjects: 'Loyihalar',
+                navAbout: 'Kompaniya haqida',
+                navNews: 'Yangiliklar',
+                navPartners: 'Hamkorlar uchun',
+                navContacts: 'Kontaktlar',
+                login: 'Kirish',
+                register: 'Ro‘yxatdan o‘tish',
+                profile: 'Profil',
+                logout: 'Chiqish',
+                contactTitle: 'Savollaringiz bormi?',
+                contactDescription: 'Kontaktingizni qoldiring, barcha savollaringizga javob beramiz.',
+                fieldName: 'Ism',
+                fieldPhone: 'Telefon',
+                fieldMessage: 'Maslahat yoki kamchilik',
+                fieldMessagePlaceholder: 'Maslahat yoki kamchilikni yozing...',
+                submit: 'Arizani yuborish',
+                homeCta: 'Ariza qoldirish',
+                homeSubmit: 'Arizani yuborish',
+                apartmentHeading: 'Orzuyingizdagi xonadonni tanlang',
+                apartmentEyebrow: 'XON SAROY · XONADONLAR',
+                apartmentFilter: 'Xonadonlar',
+                roomsLabel: 'Xonalar',
+                allLabel: 'Barchasi',
+                clearFilters: 'Tozalash',
+                applyFilters: 'Filtrlash',
+                floorLabel: 'Qavat',
+                areaLabel: 'Maydon, m²',
+                priceLabel: 'Narx, so‘m',
+                details: 'Batafsil',
+                detailTitle: 'Xonadon haqida',
+                requestName: 'Ismingiz',
+                requestPhone: 'Telefon raqamingiz',
+                requestDescription: 'Ma’lumotlaringizni qoldiring, siz bilan bog‘lanamiz.',
+                requestSubmit: 'Ariza qoldirish',
+                detailRooms: 'Xonalar soni',
+                detailFloor: 'Qavat',
+                detailArea: 'Umumiy maydon',
+                detailPrice: 'Umumiy narx',
+                detailM2Price: '1 m² narxi',
+                detailStatus: 'Holati',
+                statusAvailable: 'Sotuvda mavjud',
+                specsTitle: 'Asosiy ma’lumotlar:',
+                installmentTitle: '0% foizsiz muddatli to‘lov imkoniyati',
+                installmentSubtitle: 'Xon Saroy majmualarida qulay to‘lov rejalari',
+                downPaymentLabel: 'Boshlang‘ich to‘lov (15% dan):',
+                monthlyPaymentLabel: 'Oylik to‘lov (36 oygacha):',
+                descriptionTitle: 'Loyiha va xonadon haqida:',
+                amenitiesTitle: 'Majmua qulayliklari va afzalliklari:',
+                requestFormTitle: 'Ushbu uy bo‘yicha ariza qoldirish:',
+                planPlaceholder: 'Xonadon rejasi',
+                amenitySeismic: '9 ballik seysmik chidamlilik',
+                amenityParking: 'Yerosti avtoturargohi',
+                amenitySecurity: '24/7 qo‘riqlash va nazorat',
+                amenityElevator: 'Tezyurar ovozsiz liftlar',
+                amenityCourtyard: 'Yashil ekologik hovli',
+                amenityPlayground: 'Bolalar va sport maydonchalari',
+                detailDescription: 'Xonadonning xona soni, qavati, maydoni va narxi.',
+                apartmentShortcut: 'Xonadon tanlash', heroDescription0: 'Toshkent viloyati, Zangiota tumani, Iqbol MFY, Xalqa yo‘li ko‘chasi 101-uy. 1 xonali xonadon.',
+                heroDescription1: '1 xonali xonadon. Boshlang‘ich to‘lovni 3 ga bo‘lib to‘lash imkoniyati.', heroDescription2: '2 xonali xonadon. Boshlang‘ich to‘lovni 3 ga bo‘lib to‘lang.',
+                heroDescription3: '1 xonali xonadon. Boshlang‘ich to‘lovni qulay qismlarga bo‘lib to‘lash mumkin.', heroDescription4: '2 xonali xonadon, zamonaviy yashash muhiti va qulay boshlang‘ich to‘lov.',
+                statYears: 'yildan beri bozorda', statProjects: 'muvaffaqiyatli loyiha', statFamilies: 'baxtli oila', statArea: 'loyihalar maydoni',
+                aboutDescription: 'Xon Saroy — Navoiyda asos solingan va 2019-yildan buyon Toshkentda faoliyat yuritayotgan qurilish kompaniyasi. Bugun minglab oilalar Xon Saroy loyihalarini o‘z uyi sifatida tanlagan. Biz sifatli qurilish va qulay yashash muhitini yaratishga intilamiz.',
+                projectsHeading: 'Bizning loyihalar', statusSoon: 'Tez kunda', statusInProgress: 'Jarayonda', statusCompleted: 'Yakunlangan',
+                emptyProjectsTitle: 'Yangi loyihalar tez kunda', emptyProjectsDescription: 'Xon Saroy yangi turar joy majmualarini bunyod etmoqda.', allProjects: 'Barchasini ko‘rsatish',
+                materialsHeading: 'Qanday materiallardan foydalanamiz', materialsDescription: 'Qurilishda sifat va ishonchlilikka alohida e’tibor beramiz. Loyihalarimizda sinalgan, zamonaviy talablarga javob beradigan materiallardan foydalanamiz.',
+                partnersHeading: 'Hamkorlar uchun', partnersDescription: 'Xon Saroy loyihalarini birgalikda rivojlantirish uchun hamkorlik imkoniyatlari.',
+                partnerInvestor: 'Investorlar uchun', partnerInvestorDescription: 'Shaffof moliyaviy model va istiqbolli qurilish loyihalariga sarmoya kiritish imkoniyati.',
+                partnerBuilders: 'Qurilish kompaniyalari uchun', partnerBuildersDescription: 'Pudrat ishlari, qurilishda ishtirok etish va loyihalarni amalga oshirish.',
+                partnerSuppliers: 'Material yetkazib beruvchilar', partnerSuppliersDescription: 'Sifatli qurilish materiallari va uzoq muddatli yetkazib berish bo‘yicha hamkorlik.',
+                partnerLandowners: 'Yer va loyiha egalari uchun', partnerLandownersDescription: 'Yer maydoni yoki istiqbolli loyihangizni Xon Saroy bilan birga rivojlantiring.', partnerAction: 'Hamkorlik qilish',
+                clientsHeading: 'Mijozlar', happyClient: 'Baxtli mijoz', contactPageTitle: 'Kontaktlar',
+                contactPageDescription: 'Biz bilan bog‘lanish va savdo ofislariga tashrif buyurish uchun ma’lumotlar.', companyDetails: 'Kompaniya rekvizitlari',
+                companyNameLabel: 'Kompaniya nomi', taxIdLabel: 'STIR', legalAddressLabel: 'Yuridik manzil',
+                legalAddress: 'Toshkent shahri, Yunusobod tumani, Axilobod MFY, 13-mavze, 72-uy', waysToContact: 'Bog‘lanish usullari',
+                phoneLabel: 'Telefon', emailLabel: 'Elektron pochta', workingHoursLabel: 'Ish vaqti', socialLinksLabel: 'Ijtimoiy tarmoqlar',
+                officesHeading: 'Savdo ofislari', addressLabel: 'Manzil', footerContact: 'Bog‘lanish', footerAddress: 'Toshkent tumani, TKAD ko‘chasi, 97',
+                copyright: '© Xon Saroy. Barcha huquqlar himoyalangan.', privacyPolicy: 'Maxfiylik siyosati', apartmentCount: 'Topilgan variantlar:',
+                noApartmentsTitle: 'Mos xonadonlar topilmadi', noApartmentsDescription: 'Tanlangan filtr bo‘yicha mos xonadon mavjud emas.',
+                roomUnit: 'xonali', floorUnit: '-qavat', currencyUnit: 'so‘m', contactModalTitle: 'Hamkorlik bo‘yicha ariza', contactModalDescription: 'Ismingiz va telefon raqamingizni qoldiring, siz bilan bog‘lanamiz.', close: 'Yopish'
+            },
+            ru: {
+                languageLabel: 'Сменить язык',
+                navProjects: 'Проекты',
+                navAbout: 'О компании',
+                navNews: 'Новости',
+                navPartners: 'Партнёрам',
+                navContacts: 'Контакты',
+                login: 'Войти',
+                register: 'Регистрация',
+                profile: 'Профиль',
+                logout: 'Выход',
+                contactTitle: 'Есть вопросы?',
+                contactDescription: 'Оставьте ваш контакт, и мы ответим на все вопросы.',
+                fieldName: 'Имя',
+                fieldPhone: 'Телефон',
+                fieldMessage: 'Совет или замечание',
+                fieldMessagePlaceholder: 'Напишите совет или замечание...',
+                submit: 'Отправить заявку',
+                homeCta: 'Оставить заявку',
+                homeSubmit: 'Отправить заявку',
+                apartmentHeading: 'Выберите квартиру мечты',
+                apartmentEyebrow: 'XON SAROY · КВАРТИРЫ',
+                apartmentFilter: 'Квартиры',
+                roomsLabel: 'Комнаты',
+                allLabel: 'Все',
+                clearFilters: 'Сбросить',
+                applyFilters: 'Фильтр',
+                floorLabel: 'Этаж',
+                areaLabel: 'Площадь, м²',
+                priceLabel: 'Цена, сум',
+                details: 'Подробнее',
+                detailTitle: 'О квартире',
+                requestName: 'Ваше имя',
+                requestPhone: 'Номер телефона',
+                requestDescription: 'Оставьте данные, и мы свяжемся с вами.',
+                requestSubmit: 'Оставить заявку',
+                detailRooms: 'Количество комнат',
+                detailFloor: 'Этаж',
+                detailArea: 'Общая площадь',
+                detailPrice: 'Общая стоимость',
+                detailM2Price: 'Цена за 1 м²',
+                detailStatus: 'Статус',
+                statusAvailable: 'В продаже',
+                specsTitle: 'Основные параметры:',
+                installmentTitle: 'Беспроцентная рассрочка 0%',
+                installmentSubtitle: 'Удобные планы выплат в комплексах Xon Saroy',
+                downPaymentLabel: 'Первоначальный взнос (от 15%):',
+                monthlyPaymentLabel: 'Ежемесячный платёж (до 36 мес.):',
+                descriptionTitle: 'О проекте и квартире:',
+                amenitiesTitle: 'Удобства и преимущества комплекса:',
+                requestFormTitle: 'Оставить заявку на эту квартиру:',
+                planPlaceholder: 'Планировка квартиры',
+                amenitySeismic: 'Сейсмостойкость 9 баллов',
+                amenityParking: 'Подземный автопаркинг',
+                amenitySecurity: '24/7 охрана и видеонаблюдение',
+                amenityElevator: 'Скоростные бесшумные лифты',
+                amenityCourtyard: 'Зеленый экологичный двор',
+                amenityPlayground: 'Детские и спортивные площадки',
+                detailDescription: 'Количество комнат, этаж, площадь и стоимость квартиры.',
+                apartmentShortcut: 'Выбрать квартиру', heroDescription0: 'Квартира с одной комнатой по адресу: Ташкентская область, Зангиатинский район, Икбол МФЙ, улица Халка йули, дом 101.',
+                heroDescription1: 'Однокомнатная квартира. Первоначальный взнос можно оплатить тремя частями.', heroDescription2: 'Двухкомнатная квартира. Разделите первоначальный взнос на три части.',
+                heroDescription3: 'Однокомнатная квартира с возможностью удобной оплаты первоначального взноса.', heroDescription4: 'Двухкомнатная квартира, современная среда и удобный первоначальный взнос.',
+                statYears: 'лет на рынке', statProjects: 'успешных проектов', statFamilies: 'счастливых семей', statArea: 'площадь проектов',
+                aboutDescription: 'Xon Saroy — строительная компания, основанная в Навои и работающая в Ташкенте с 2019 года. Тысячи семей выбрали проекты Xon Saroy своим домом. Мы стремимся создавать качественные дома и комфортную среду для жизни.',
+                projectsHeading: 'Наши проекты', statusSoon: 'Скоро', statusInProgress: 'Строится', statusCompleted: 'Завершён',
+                emptyProjectsTitle: 'Новые проекты скоро', emptyProjectsDescription: 'Xon Saroy строит новые жилые комплексы.', allProjects: 'Показать все проекты',
+                materialsHeading: 'Какие материалы мы используем', materialsDescription: 'Мы уделяем особое внимание качеству и надёжности. В наших проектах используются проверенные материалы, соответствующие современным требованиям.',
+                partnersHeading: 'Партнёрам', partnersDescription: 'Возможности сотрудничества для совместного развития проектов Xon Saroy.',
+                partnerInvestor: 'Для инвесторов', partnerInvestorDescription: 'Инвестируйте в перспективные строительные проекты с прозрачной финансовой моделью.',
+                partnerBuilders: 'Для строительных компаний', partnerBuildersDescription: 'Подрядные работы, участие в строительстве и реализация проектов.',
+                partnerSuppliers: 'Поставщикам материалов', partnerSuppliersDescription: 'Поставки качественных строительных материалов на долгосрочной основе.',
+                partnerLandowners: 'Владельцам земли и проектов', partnerLandownersDescription: 'Развивайте земельный участок или перспективный проект вместе с Xon Saroy.', partnerAction: 'Сотрудничать',
+                clientsHeading: 'Клиенты', happyClient: 'Довольный клиент', contactPageTitle: 'Контакты',
+                contactPageDescription: 'Информация для связи с нами и посещения офисов продаж.', companyDetails: 'Реквизиты компании',
+                companyNameLabel: 'Название компании', taxIdLabel: 'ИНН', legalAddressLabel: 'Юридический адрес',
+                legalAddress: 'Город Ташкент, Юнусабадский район, МФЙ Ахилобод, 13-й квартал, дом 72', waysToContact: 'Способы связи',
+                phoneLabel: 'Телефон', emailLabel: 'Электронная почта', workingHoursLabel: 'Часы работы', socialLinksLabel: 'Социальные сети',
+                officesHeading: 'Офисы продаж', addressLabel: 'Адрес', footerContact: 'Связаться', footerAddress: 'Ташкентский район, улица ТКАД, 97',
+                copyright: '© Xon Saroy. Все права защищены.', privacyPolicy: 'Политика конфиденциальности', apartmentCount: 'Найдено вариантов:',
+                noApartmentsTitle: 'Квартиры не найдены', noApartmentsDescription: 'По выбранным фильтрам квартиры не найдены.',
+                roomUnit: 'комнатная', floorUnit: '-й этаж', currencyUnit: 'сум', contactModalTitle: 'Заявка о сотрудничестве', contactModalDescription: 'Оставьте имя и номер телефона, и мы свяжемся с вами.', close: 'Закрыть'
+            },
+            en: {
+                languageLabel: 'Change language',
+                navProjects: 'Projects',
+                navAbout: 'About us',
+                navNews: 'News',
+                navPartners: 'Partners',
+                navContacts: 'Contacts',
+                login: 'Login',
+                register: 'Sign up',
+                profile: 'Profile',
+                logout: 'Logout',
+                contactTitle: 'Any questions?',
+                contactDescription: 'Leave your contact details and we will answer all your questions.',
+                fieldName: 'Name',
+                fieldPhone: 'Phone',
+                fieldMessage: 'Advice or issue',
+                fieldMessagePlaceholder: 'Write your advice or issue...',
+                submit: 'Submit application',
+                homeCta: 'Submit request',
+                homeSubmit: 'Submit application',
+                apartmentHeading: 'Choose your dream apartment',
+                apartmentEyebrow: 'XON SAROY · APARTMENTS',
+                apartmentFilter: 'Apartments',
+                roomsLabel: 'Rooms',
+                allLabel: 'All',
+                clearFilters: 'Clear',
+                applyFilters: 'Filter',
+                floorLabel: 'Floor',
+                areaLabel: 'Area, m²',
+                priceLabel: 'Price, sum',
+                details: 'Details',
+                detailTitle: 'About apartment',
+                requestName: 'Your name',
+                requestPhone: 'Phone number',
+                requestDescription: 'Leave your details and we will contact you.',
+                requestSubmit: 'Submit request',
+                detailRooms: 'Rooms',
+                detailFloor: 'Floor',
+                detailArea: 'Total Area',
+                detailPrice: 'Total Price',
+                detailM2Price: 'Price per 1 m²',
+                detailStatus: 'Status',
+                statusAvailable: 'Available for Sale',
+                specsTitle: 'Key Specifications:',
+                installmentTitle: '0% Interest-free Installment Plan',
+                installmentSubtitle: 'Convenient payment options across Xon Saroy complexes',
+                downPaymentLabel: 'Down payment (from 15%):',
+                monthlyPaymentLabel: 'Monthly installment (up to 36 mos):',
+                descriptionTitle: 'About the Project & Apartment:',
+                amenitiesTitle: 'Complex Amenities & Advantages:',
+                requestFormTitle: 'Inquire about this apartment:',
+                planPlaceholder: 'Floor plan',
+                amenitySeismic: '9-point seismic resistance',
+                amenityParking: 'Underground parking',
+                amenitySecurity: '24/7 security & CCTV',
+                amenityElevator: 'Silent high-speed elevators',
+                amenityCourtyard: 'Green ecological courtyard',
+                amenityPlayground: 'Children & sports playgrounds',
+                detailDescription: 'Apartment details, including rooms, floor, area, and price.',
+                apartmentShortcut: 'Choose an apartment', heroDescription0: 'One-bedroom apartment at 101 Halqa Yoli Street, Iqbol MFY, Zangiota district, Tashkent region.',
+                heroDescription1: 'One-bedroom apartment. Split the initial payment into three installments.', heroDescription2: 'Two-bedroom apartment. Pay the initial amount in three installments.',
+                heroDescription3: 'One-bedroom apartment with a convenient installment plan for the initial payment.', heroDescription4: 'Two-bedroom apartment with a modern living environment and a convenient initial payment.',
+                statYears: 'years on the market', statProjects: 'successful projects', statFamilies: 'happy families', statArea: 'project area',
+                aboutDescription: 'Xon Saroy is a construction company founded in Navoi and operating in Tashkent since 2019. Thousands of families have chosen Xon Saroy projects as their home. We are committed to quality construction and comfortable living environments.',
+                projectsHeading: 'Our projects', statusSoon: 'Coming soon', statusInProgress: 'In progress', statusCompleted: 'Completed',
+                emptyProjectsTitle: 'New projects coming soon', emptyProjectsDescription: 'Xon Saroy is building new residential complexes.', allProjects: 'Show all projects',
+                materialsHeading: 'Materials we use', materialsDescription: 'We pay special attention to quality and reliability, using tested materials that meet modern standards in our projects.',
+                partnersHeading: 'For partners', partnersDescription: 'Partnership opportunities to develop Xon Saroy projects together.',
+                partnerInvestor: 'For investors', partnerInvestorDescription: 'Invest in promising construction projects with a transparent financial model.',
+                partnerBuilders: 'For construction companies', partnerBuildersDescription: 'Contracting, construction participation, and project delivery opportunities.',
+                partnerSuppliers: 'For material suppliers', partnerSuppliersDescription: 'Long-term partnerships supplying quality construction materials.',
+                partnerLandowners: 'For land and project owners', partnerLandownersDescription: 'Develop your land or promising project together with Xon Saroy.', partnerAction: 'Partner with us',
+                clientsHeading: 'Clients', happyClient: 'Happy client', contactPageTitle: 'Contacts',
+                contactPageDescription: 'Information for contacting us and visiting our sales offices.', companyDetails: 'Company details',
+                companyNameLabel: 'Company name', taxIdLabel: 'Tax ID', legalAddressLabel: 'Legal address',
+                legalAddress: '72, 13th block, Axilobod MFY, Yunusobod district, Tashkent, Uzbekistan', waysToContact: 'Ways to contact us',
+                phoneLabel: 'Phone', emailLabel: 'Email', workingHoursLabel: 'Working hours', socialLinksLabel: 'Social media',
+                officesHeading: 'Sales offices', addressLabel: 'Address', footerContact: 'Contact', footerAddress: '97 TKAD Street, Tashkent district',
+                copyright: '© Xon Saroy. All rights reserved.', privacyPolicy: 'Privacy policy', apartmentCount: 'Available apartments:',
+                noApartmentsTitle: 'No apartments found', noApartmentsDescription: 'No apartments match the selected filters.',
+                roomUnit: 'bedroom', floorUnit: ' floor', currencyUnit: 'sum', contactModalTitle: 'Partnership request', contactModalDescription: 'Leave your name and phone number and we will contact you.', close: 'Close'
+            }
+        };
+
+        const formatApartmentUnit = (rooms, lang) => {
+            const count = Number(rooms);
+            if (lang === 'ru') return `${count}-комнатная`;
+            if (lang === 'en') return `${count}-bedroom`;
+            return `${count} xonali`;
+        };
+
+        const formatRoomCount = (rooms, lang) => {
+            const count = Number(rooms);
+            if (lang === 'ru') return `${count} ${count === 1 ? 'комната' : count < 5 ? 'комнаты' : 'комнат'}`;
+            if (lang === 'en') return `${count} ${count === 1 ? 'room' : 'rooms'}`;
+            return `${count} xona`;
+        };
+
+        let activeApartmentCard = null;
+        let activeIsProject = false;
+
+        const updateApartmentDetailsText = (lang) => {
+            const dict = translations[lang] || translations.uz;
+            const roomsLabel = document.getElementById('detail-rooms-label');
+            const floorLabel = document.getElementById('detail-floor-label');
+            const areaLabel = document.getElementById('detail-area-label');
+            const m2PriceLabel = document.getElementById('detail-m2-price-label');
+            const priceLabel = document.getElementById('detail-price-label');
+            const statusLabel = document.getElementById('detail-status-label');
+            if (roomsLabel) roomsLabel.textContent = `🚪 ${dict.detailRooms}`;
+            if (floorLabel) floorLabel.textContent = `🏢 ${dict.detailFloor}`;
+            if (areaLabel) areaLabel.textContent = `📐 ${dict.detailArea}`;
+            if (m2PriceLabel) m2PriceLabel.textContent = `📊 ${dict.detailM2Price}`;
+            if (priceLabel) priceLabel.textContent = `💰 ${dict.detailPrice}`;
+            if (statusLabel) statusLabel.textContent = `🔑 ${dict.detailStatus}`;
+            const detailCloseButton = document.getElementById('detail-modal-close');
+            if (detailCloseButton) detailCloseButton.setAttribute('aria-label', dict.close);
+
+            document.querySelectorAll('.apartment-details, .project-details-btn').forEach((link) => {
+                if (link) link.textContent = dict.details;
+            });
+        };
+
+        const applyLanguage = (lang) => {
+            const dict = translations[lang] || translations.uz;
+            document.documentElement.lang = lang;
+            localStorage.setItem(storageKey, lang);
+
+            const setText = (id, key) => {
+                const el = document.getElementById(id);
+                if (el && dict[key]) {
+                    el.textContent = dict[key];
+                }
+            };
+
+            document.querySelectorAll('[data-i18n]').forEach((element) => {
+                const key = element.dataset.i18n;
+                if (dict[key]) element.textContent = dict[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+                const key = element.dataset.i18nPlaceholder;
+                if (dict[key]) element.placeholder = dict[key];
+            });
+
+            setText('nav-projects', 'navProjects');
+            setText('nav-about', 'navAbout');
+            setText('nav-news', 'navNews');
+            setText('nav-partners', 'navPartners');
+            setText('nav-contacts', 'navContacts');
+            setText('login-link', 'login');
+            setText('register-link', 'register');
+            setText('profile-link', 'profile');
+            setText('logout-link', 'logout');
+            setText('contact-title', 'contactTitle');
+            setText('contact-description', 'contactDescription');
+            setText('field-name-label', 'fieldName');
+            setText('field-phone-label', 'fieldPhone');
+            setText('field-message-label', 'fieldMessage');
+            setText('contact-submit', 'submit');
+            setText('apartment-heading-title', 'apartmentHeading');
+            setText('apartment-eyebrow', 'apartmentEyebrow');
+            setText('rooms-label', 'roomsLabel');
+            setText('clear-filters-link', 'clearFilters');
+            setText('apply-filters-button', 'applyFilters');
+
+            document.querySelectorAll('.filter-link[data-status]').forEach((link) => {
+                const statusKey = ({ soon: 'statusSoon', in_progress: 'statusInProgress', completed: 'statusCompleted' })[link.dataset.status];
+                if (statusKey) link.textContent = dict[statusKey];
+            });
+
+            document.querySelectorAll('.room-option').forEach((button) => {
+                if (button.value === '') {
+                    button.textContent = dict.allLabel;
+                }
+            });
+
+            document.querySelectorAll('.apartment-unit-label').forEach((label) => {
+                label.textContent = formatApartmentUnit(label.dataset.rooms, lang);
+            });
+            document.querySelectorAll('.apartment-floor-label').forEach((label) => {
+                label.textContent = `${label.dataset.floor}${dict.floorUnit}`;
+            });
+            document.querySelectorAll('.apartment-price').forEach((label) => {
+                label.textContent = `${Number(label.dataset.price).toLocaleString(lang === 'uz' ? 'uz-UZ' : lang === 'ru' ? 'ru-RU' : 'en-US')} ${dict.currencyUnit}`;
+            });
+            const floorOutput = document.getElementById('floor-output');
+            if (floorOutput && /^\d+$/.test(floorOutput.textContent)) {
+                floorOutput.textContent = `${floorOutput.textContent}${dict.floorUnit}`;
+            } else if (floorOutput) {
+                floorOutput.textContent = dict.allLabel;
+            }
+
+            updateApartmentDetailsText(lang);
+            if (activeApartmentCard) openDetailModal(activeApartmentCard, activeIsProject);
+
+            const nameInput = document.getElementById('question-name');
+            const phoneInput = document.getElementById('question-phone');
+            const messageInput = document.getElementById('question-message');
+            if (nameInput) nameInput.placeholder = dict.fieldName;
+            if (phoneInput) phoneInput.placeholder = dict.fieldPhone;
+            if (messageInput) messageInput.placeholder = dict.fieldMessagePlaceholder;
+            const contactName = document.getElementById('contact-name');
+            const callbackName = document.getElementById('callback-name');
+            const callbackPhone = document.getElementById('callback-phone');
+            if (contactName) contactName.placeholder = dict.fieldName;
+            if (callbackName) callbackName.placeholder = dict.fieldName;
+            if (callbackPhone) callbackPhone.placeholder = dict.fieldPhone;
+
+            const toggle = document.getElementById('lang-toggle');
+            if (toggle) {
+                toggle.textContent = lang.toUpperCase();
+                toggle.setAttribute('aria-label', dict.languageLabel);
+            }
+        };
+
+        const storedLang = localStorage.getItem(storageKey);
+        const initialLang = langOrder.includes(storedLang) ? storedLang : 'uz';
+        const toggleButton = document.getElementById('lang-toggle');
+        if (toggleButton) {
+            toggleButton.addEventListener('click', () => {
+                const currentIndex = langOrder.indexOf(localStorage.getItem(storageKey) || initialLang);
+                const nextLang = langOrder[(currentIndex + 1) % langOrder.length];
+                applyLanguage(nextLang);
+            });
+        }
+
+        const detailModal = document.getElementById('detail-modal-backdrop');
+        const detailClose = document.getElementById('detail-modal-close');
+        const detailRooms = document.getElementById('detail-rooms');
+        const detailFloor = document.getElementById('detail-floor');
+        const detailArea = document.getElementById('detail-area');
+        const detailPrice = document.getElementById('detail-price');
+
+        const openDetailModal = (card) => {
+            if (!detailModal || !card) return;
+            activeApartmentCard = card;
+            const rooms = card.dataset.rooms || '—';
+            const floor = card.dataset.floor || '—';
+            const area = card.dataset.area || '—';
+            const price = card.dataset.price || '—';
+            const title = card.dataset.title || 'Xonadon';
+            const lang = localStorage.getItem(storageKey) || initialLang;
+            const dict = translations[lang] || translations.uz;
+            const apartmentName = `${title} · ${formatApartmentUnit(rooms, lang)}`;
+
+            if (detailRooms) detailRooms.textContent = formatRoomCount(rooms, lang);
+            if (detailFloor) detailFloor.textContent = `${floor}${lang === 'uz' ? '-qavat' : lang === 'ru' ? '-этаж' : '-floor'}`;
+            if (detailArea) detailArea.textContent = `${area} m²`;
+            if (detailPrice) detailPrice.textContent = `${price} ${lang === 'ru' ? 'сум' : lang === 'en' ? 'sum' : 'so\'m'}`;
+            document.getElementById('detail-modal-title').textContent = apartmentName;
+            document.getElementById('apartment-request-message').value = `${apartmentName}; ${dict.detailFloor}: ${floor}; ${dict.detailArea}: ${area} m²; ${dict.detailPrice}: ${price}`;
+            detailModal.hidden = false;
+        };
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('[data-apartment-link]');
+            if (link) {
+                event.preventDefault();
+                const card = link.closest('.apartment-card');
+                openDetailModal(card);
+            }
+        });
+
+        if (detailClose) {
+            detailClose.addEventListener('click', () => {
+                detailModal.hidden = true;
+            });
+        }
+        if (detailModal) {
+            detailModal.addEventListener('click', (event) => {
+                if (event.target === detailModal) {
+                    detailModal.hidden = true;
+                }
+            });
+        }
+
+        applyLanguage(initialLang);
+
+        const telegramForm = document.getElementById('contact-question-form');
+        const telegramIdField = document.getElementById('telegram-id');
+        const telegramUsernameField = document.getElementById('telegram-username');
+        const contactFeedback = document.getElementById('contact-feedback');
+
+        const telegramState = {
+            id: '',
+            username: '',
+        };
+
+        if (window.Telegram && window.Telegram.WebApp) {
+            const telegramUser = window.Telegram.WebApp.initDataUnsafe?.user || null;
+            if (telegramUser) {
+                telegramState.id = telegramUser.id || '';
+                telegramState.username = telegramUser.username || '';
+                telegramIdField.value = telegramState.id;
+                telegramUsernameField.value = telegramState.username;
+            }
+        }
+
+        telegramForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData(telegramForm);
+            contactFeedback.textContent = 'Yuborilmoqda...';
+            contactFeedback.classList.remove('is-error');
+            contactFeedback.classList.add('is-loading');
+
+            try {
+                const response = await fetch(telegramForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: formData,
+                });
+
+                const result = await response.json();
+                contactFeedback.textContent = result.message || 'Xabar yuborildi.';
+                contactFeedback.classList.remove('is-loading');
+                contactFeedback.classList.toggle('is-error', !result.success);
+
+                if (result.success) {
+                    telegramForm.reset();
+                    telegramIdField.value = telegramState.id;
+                    telegramUsernameField.value = telegramState.username;
+                }
+            } catch (error) {
+                contactFeedback.textContent = 'Xabar yuborishda xatolik yuz berdi.';
+                contactFeedback.classList.remove('is-loading');
+                contactFeedback.classList.add('is-error');
+            }
+        });
+        });
+    </script>
+
+    <!-- Apartments Search & Filter Section (Requirements 5, 6, 7, 8, 9, 10) -->
+    <section class="apartment-section" id="apartments">
+        <div class="apartment-heading">
+            <h2 id="apartment-heading-title">Orzuyingizdagi xonadonni tanlang</h2>
+            <span class="eyebrow" id="apartment-eyebrow">XON SAROY · XONADONLAR</span>
+        </div>
+
+        <form method="get" action="#apartments" id="apartment-filter-form">
+            {% if selected_status != 'all' %}
+                <input type="hidden" name="status" value="{{ selected_status }}">
+            {% endif %}
+
+            <div class="apartment-toolbar">
+                <label class="toolbar-select" id="apartment-filter-label">Xonadonlar
+                    <select name="category" id="apartment-category-select">
+                        <option value="all" data-i18n="allLabel">Barchasi</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="toolbar-rooms">
+                    <span class="toolbar-label" id="rooms-label">Xonalar</span>
+                    <div class="room-options" id="room-options">
+                        <button type="button" data-room="" class="room-option{% if not filters.rooms %} is-selected{% endif %}">Barchasi</button>
+                        <button type="button" data-room="1" class="room-option{% if filters.rooms == '1' %} is-selected{% endif %}">1</button>
+                        <button type="button" data-room="2" class="room-option{% if filters.rooms == '2' %} is-selected{% endif %}">2</button>
+                        <button type="button" data-room="3" class="room-option{% if filters.rooms == '3' %} is-selected{% endif %}">3</button>
+                        <button type="button" data-room="4" class="room-option{% if filters.rooms == '4' %} is-selected{% endif %}">4+</button>
+                    </div>
+                    <input type="hidden" name="rooms" id="rooms-filter" value="{{ filters.rooms }}">
+                </div>
+
+                <label class="toolbar-range" id="floor-label"><span data-i18n="floorLabel">Qavat</span> <output id="floor-output">{% if filters.floor %}{{ filters.floor }}{% else %}Barchasi{% endif %}</output>
+                    <input type="range" min="1" max="8" value="{{ filters.floor|default:'1' }}" data-filter-target="floor-filter" aria-label="Qavat">
+                    <input type="hidden" name="floor" id="floor-filter" value="{{ filters.floor }}">
+                </label>
+
+                <div class="toolbar-range" id="area-range-label"><span data-i18n="areaLabel">Maydon, m²</span> <output id="area-output">{{ filters.min_area|default:'33' }} — {{ filters.max_area|default:'110' }}</output>
+                    <div class="range-pair">
+                        <input type="range" min="30" max="120" step="1" value="{{ filters.min_area|default:'33' }}" data-filter-target="area-min-filter" aria-label="Maydon minimumi">
+                        <input type="range" min="30" max="120" step="1" value="{{ filters.max_area|default:'110' }}" data-filter-target="area-max-filter" aria-label="Maydon maksimumi">
+                    </div>
+                    <input type="hidden" name="min_area" id="area-min-filter" value="{{ filters.min_area }}">
+                    <input type="hidden" name="max_area" id="area-max-filter" value="{{ filters.max_area }}">
+                </div>
+
+                <div class="toolbar-range" id="price-range-label"><span data-i18n="priceLabel">Narx, so‘m</span> <output id="price-output">{{ filters.min_price|default:'350000000' }} — {{ filters.max_price|default:'1350000000' }}</output>
+                    <div class="range-pair">
+                        <input type="range" min="0" max="1500000000" step="10000000" value="{{ filters.min_price|default:'350000000' }}" data-filter-target="price-min-filter" aria-label="Narx minimumi">
+                        <input type="range" min="0" max="1500000000" step="10000000" value="{{ filters.max_price|default:'1350000000' }}" data-filter-target="price-max-filter" aria-label="Narx maksimumi">
+                    </div>
+                    <input type="hidden" name="min_price" id="price-min-filter" value="{{ filters.min_price }}">
+                    <input type="hidden" name="max_price" id="price-max-filter" value="{{ filters.max_price }}">
+                </div>
+
+                <div class="toolbar-actions">
+                    <a href="{% url 'home' %}#apartments" id="clear-filters-link">Tozalash</a>
+                    <button type="submit" id="apply-filters-button">Filtrlash</button>
+                </div>
+            </div>
+        </form>
+
+        <p class="apartment-count"><span data-i18n="apartmentCount">Topilgan variantlar:</span> <strong id="apartment-count-number">{{ apartments|length }}</strong></p>
+
+        <div class="apartment-grid" id="apartment-grid">
+            {% include "app/_apartment_grid.html" %}
+        </div>
+    </section>
+
+    <section class="materials-section" id="materials">
+        <div class="wide-section-heading">
+            <div>
+                <h2 data-i18n="materialsHeading">Qanday materiallardan foydalanamiz</h2>
+                <p data-i18n="materialsDescription">Qurilishda sifat va ishonchlilikka alohida e’tibor beramiz. Loyihalarimizda sinalgan, zamonaviy talablarga javob beradigan materiallardan foydalanamiz.</p>
+            </div>
+            <div class="carousel-controls">
+                <button type="button" data-scroll="materials-track" data-direction="-1" aria-label="Oldingi materiallar">‹</button>
+                <button type="button" data-scroll="materials-track" data-direction="1" aria-label="Keyingi materiallar">›</button>
+            </div>
+        </div>
+        <div class="material-grid" id="materials-track">
+            {% for material in materials %}
+                <a class="material-card" href="{% if material.video_url %}{{ material.video_url }}{% else %}#materials{% endif %}"{% if material.video_url %} target="_blank" rel="noreferrer"{% endif %}>
+                    {% if material.image_url %}
+                        <img src="{{ material.image_url }}" alt="{{ material.title }}" loading="lazy">
+                    {% elif material.image %}
+                        <img src="{{ material.image.url }}" alt="{{ material.title }}" loading="lazy">
+                    {% else %}
+                        <div class="image-placeholder">Xon Saroy</div>
+                    {% endif %}
+                    <span class="material-play" aria-hidden="true">▶</span>
+                    <strong>{{ material.title }}</strong>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="clients-section" id="clients">
+        <div class="wide-section-heading">
+            <h2 data-i18n="clientsHeading">Mijozlar</h2>
+            <div class="carousel-controls">
+                <button type="button" data-scroll="clients-track" data-direction="-1" aria-label="Oldingi mijozlar">‹</button>
+                <button type="button" data-scroll="clients-track" data-direction="1" aria-label="Keyingi mijozlar">›</button>
+            </div>
+        </div>
+        <div class="client-grid" id="clients-track">
+            {% for client in clients %}
+                <article class="client-card">
+                    {% if client.image_url %}
+                        <img src="{{ client.image_url }}" alt="{{ client.name }}" loading="lazy">
+                    {% elif client.image %}
+                        <img src="{{ client.image.url }}" alt="{{ client.name }}" loading="lazy">
+                    {% endif %}
+                    <div>
+                        <strong>{{ client.name }}</strong>
+                        <span data-i18n="happyClient">Baxtli mijoz</span>
+                    </div>
+                </article>
+            {% endfor %}
+            {% if clients|length == 2 %}
+                <article class="client-card">
+                    <img src="{% static 'img/client-oybek.webp' %}" alt="Qudratov Oybek" loading="lazy">
+                    <div><strong>Qudratov Oybek</strong><span data-i18n="happyClient">Baxtli mijoz</span></div>
+                </article>
+                <article class="client-card">
+                    <img src="{% static 'img/client-madaminbek.webp' %}" alt="Mavlonov Madaminbek" loading="lazy">
+                    <div><strong>Mavlonov Madaminbek</strong><span data-i18n="happyClient">Baxtli mijoz</span></div>
+                </article>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="contact-section" id="contact">
+        <h2 data-i18n="contactTitle">Savollaringiz bormi?</h2>
+        <p data-i18n="contactDescription">Kontaktlaringizni qoldiring, barcha savollaringizga javob beramiz.</p>
+        <form class="contact-form" id="contact-form">
+            <label class="visually-hidden" for="contact-name">Ism</label>
+            <input id="contact-name" name="name" placeholder="Ism" data-i18n-placeholder="fieldName" required>
+            <label class="visually-hidden" for="contact-phone">Telefon</label>
+            <input id="contact-phone" name="phone" type="tel" placeholder="+998" required>
+            <button class="contact-button" type="submit" data-i18n="submit">Arizani yuborish</button>
+        </form>
+    </section>
+
+    <div class="quick-actions" aria-label="Tezkor aloqa">
+        <a href="tel:+998712007400" aria-label="Qo‘ng‘iroq qilish"><span aria-hidden="true">⌕</span></a>
+        <a href="#offices" aria-label="Savdo ofislarini ko‘rish"><span aria-hidden="true">●</span></a>
+    </div>
+
+    <div class="detail-modal-backdrop" id="detail-modal-backdrop" hidden>
+        <div class="detail-modal detail-modal--rich" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+            <button type="button" class="detail-modal-close" id="detail-modal-close" aria-label="Yopish">×</button>
+            
+            <!-- Modal Header -->
+            <div class="detail-modal-header">
+                <div class="detail-modal-badges">
+                    <span class="detail-badge detail-badge--category" id="detail-category-badge">Turar joy majmuasi</span>
+                    <span class="detail-badge detail-badge--status" id="detail-status-badge">Sotuvda mavjud</span>
+                </div>
+                <h3 id="detail-modal-title">Xonadon haqida</h3>
+                <p class="detail-modal-subtitle" id="detail-modal-subtitle">Xon Saroy turar-joy majmuasi</p>
+            </div>
+
+            <!-- Modal Image Preview -->
+            <div class="detail-modal-media" id="detail-modal-media">
+                <img id="detail-modal-img" src="" alt="Xonadon rejasi" loading="lazy">
+                <div id="detail-modal-placeholder" class="detail-modal-placeholder" hidden>
+                    <span>📐</span>
+                    <p data-i18n="planPlaceholder">Xonadon rejasi</p>
+                </div>
+            </div>
+
+            <!-- Detailed Specs Grid (6 Cards) -->
+            <div class="detail-section-title" data-i18n="specsTitle">Asosiy ma’lumotlar:</div>
+            <div class="detail-modal-grid">
+                <div class="spec-card">
+                    <span id="detail-rooms-label">🚪 Xonalar</span>
+                    <strong id="detail-rooms">—</strong>
+                </div>
+                <div class="spec-card">
+                    <span id="detail-floor-label">🏢 Qavat</span>
+                    <strong id="detail-floor">—</strong>
+                </div>
+                <div class="spec-card">
+                    <span id="detail-area-label">📐 Maydon</span>
+                    <strong id="detail-area">—</strong>
+                </div>
+                <div class="spec-card">
+                    <span id="detail-m2-price-label">📊 1 m² narxi</span>
+                    <strong id="detail-m2-price">—</strong>
+                </div>
+                <div class="spec-card spec-card--highlight">
+                    <span id="detail-price-label">💰 Umumiy narx</span>
+                    <strong id="detail-price">—</strong>
+                </div>
+                <div class="spec-card">
+                    <span id="detail-status-label">🔑 Holati</span>
+                    <strong id="detail-status-val">Sotuvda mavjud</strong>
+                </div>
+            </div>
+
+            <!-- Installment / Muddatli to'lov Info Banner -->
+            <div class="detail-modal-installment" id="detail-modal-installment">
+                <div class="installment-header">
+                    <span class="installment-icon">🧮</span>
+                    <div>
+                        <strong data-i18n="installmentTitle">0% foizsiz muddatli to‘lov imkoniyati</strong>
+                        <p data-i18n="installmentSubtitle">Xon Saroy majmualarida qulay to‘lov rejalari</p>
+                    </div>
+                </div>
+                <div class="installment-details">
+                    <div class="installment-col">
+                        <span data-i18n="downPaymentLabel">Boshlang‘ich to‘lov (15% dan):</span>
+                        <strong id="detail-down-payment">—</strong>
+                    </div>
+                    <div class="installment-col">
+                        <span data-i18n="monthlyPaymentLabel">Oylik to‘lov (36 oygacha):</span>
+                        <strong id="detail-monthly-payment">—</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description / Loyiha tavsifi -->
+            <div class="detail-modal-section">
+                <h4 data-i18n="descriptionTitle">Loyiha va xonadon haqida:</h4>
+                <p id="detail-description">Zamonaviy arxitektura, qulay infratuzilma va yuqori sifatli qurilish standartlari.</p>
+            </div>
+
+            <!-- Amenities / Afzalliklar & Infratuzilma -->
+            <div class="detail-modal-section">
+                <h4 data-i18n="amenitiesTitle">Majmua qulayliklari va afzalliklari:</h4>
+                <div class="detail-amenities-grid">
+                    <div class="amenity-item"><span>🛡️</span> <strong data-i18n="amenitySeismic">9 ballik seysmik chidamlilik</strong></div>
+                    <div class="amenity-item"><span>🅿️</span> <strong data-i18n="amenityParking">Yerosti avtoturargohi</strong></div>
+                    <div class="amenity-item"><span>🔒</span> <strong data-i18n="amenitySecurity">24/7 qo‘riqlash va nazorat</strong></div>
+                    <div class="amenity-item"><span>🛗</span> <strong data-i18n="amenityElevator">Tezyurar ovozsiz liftlar</strong></div>
+                    <div class="amenity-item"><span>🌳</span> <strong data-i18n="amenityCourtyard">Yashil ekologik hovli</strong></div>
+                    <div class="amenity-item"><span>⚽</span> <strong data-i18n="amenityPlayground">Bolalar va sport maydonchalari</strong></div>
+                </div>
+            </div>
+
+            <!-- Fast Contact / CTA Bar -->
+            <div class="detail-modal-cta-bar">
+                <a href="tel:+998712007400" class="detail-call-btn">
+                    <span>📞</span> +998 71 200 74 00
+                </a>
+                <a href="https://t.me/XonSaroy_apartment_bot" target="_blank" rel="noreferrer" class="detail-telegram-btn">
+                    <span>💬</span> Telegram bot
+                </a>
+            </div>
+
+            <!-- Request / Inquiry Form -->
+            <div class="detail-modal-form-wrap">
+                <h4 data-i18n="requestFormTitle">Ushbu uy bo‘yicha ariza qoldirish:</h4>
+                <p data-i18n="requestDescription">Ismingiz va telefoningizni qoldiring, mutaxassisimiz tezda bog‘lanadi.</p>
+                <form class="apartment-request-form" id="apartment-request-form" method="post" action="{% url 'contact_submit' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="message" id="apartment-request-message">
+                    <div class="form-row-2">
+                        <div>
+                            <label for="apartment-request-name" data-i18n="requestName">Ismingiz</label>
+                            <input id="apartment-request-name" name="name" placeholder="Ismingiz" data-i18n-placeholder="requestName" required>
+                        </div>
+                        <div>
+                            <label for="apartment-request-phone" data-i18n="requestPhone">Telefon raqamingiz</label>
+                            <input id="apartment-request-phone" name="phone" type="tel" placeholder="+998" required>
+                        </div>
+                    </div>
+                    <button type="submit" id="apartment-request-submit" data-i18n="requestSubmit">Ariza qoldirish</button>
+                    <p class="apartment-request-feedback" id="apartment-request-feedback" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="contact-modal-backdrop" id="contact-modal-backdrop" hidden>
+        <section class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="callback-title">
+            <button type="button" class="detail-modal-close" id="contact-modal-close" aria-label="Yopish">×</button>
+            <h3 id="callback-title" data-i18n="contactModalTitle">Hamkorlik bo‘yicha ariza</h3>
+            <p data-i18n="contactModalDescription">Ismingiz va telefon raqamingizni qoldiring, siz bilan bog‘lanamiz.</p>
+            <form id="callback-form" method="post" action="{% url 'contact_submit' %}">
+                {% csrf_token %}
+                <input type="hidden" name="message" id="callback-message" value="Hamkorlik bo‘yicha ariza">
+                <label class="visually-hidden" for="callback-name" data-i18n="fieldName">Ism</label>
+                <input id="callback-name" name="name" placeholder="Ism" data-i18n-placeholder="fieldName" required>
+                <label class="visually-hidden" for="callback-phone" data-i18n="fieldPhone">Telefon</label>
+                <input id="callback-phone" name="phone" type="tel" placeholder="Telefon" data-i18n-placeholder="fieldPhone" required>
+                <button class="contact-button" type="submit" data-i18n="partnerAction">Hamkorlik qilish</button>
+                <div class="contact-feedback" id="callback-feedback" aria-live="polite"></div>
+            </form>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-main">
+            <a class="footer-brand" href="{% url 'home' %}"><img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy"></a>
+            <div><span data-i18n="footerContact">BOG‘LANISH</span><a href="tel:+998712007400">+998 71 200 74 00</a><span data-i18n="emailLabel">ELEKTRON POCHTA</span><a href="mailto:xansarayuz@gmail.com">xansarayuz@gmail.com</a></div>
+            <div><span data-i18n="addressLabel">MANZIL</span><strong data-i18n="footerAddress">Toshkent tumani, TKAD ko‘chasi, 97</strong><span data-i18n="workingHoursLabel">ALOQA MARKAZI</span><strong>9:00 — 22:00</strong></div>
+            <div class="social-links"><a href="https://www.instagram.com/xonsaroyuz" target="_blank" rel="noreferrer">Instagram</a><a href="https://t.me/XonSaroy_apartment_bot" target="_blank" rel="noreferrer">Telegram</a><a href="https://www.youtube.com/xonsaroyuz" target="_blank" rel="noreferrer">YouTube</a></div>
+        </div>
+        <div class="footer-legal"><span data-i18n="copyright">© Xon Saroy. Barcha huquqlar himoyalangan.</span><a href="https://xonsaroy.uz/privacy" target="_blank" rel="noreferrer" data-i18n="privacyPolicy">Maxfiylik siyosati</a></div>
+    </footer>
+
+    <script>
+        const HERO_ROTATE_MS = 5000;
+        const hero = document.querySelector('[data-hero]');
+
+        if (hero) {
+            const heroSlides = [...hero.querySelectorAll('.hero-slide')];
+            const heroImages = [...hero.querySelectorAll('.hero-media-image')];
+            const heroDots = [...hero.querySelectorAll('[data-hero-goto]')];
+            const heroCounter = hero.querySelector('[data-hero-counter]');
+            const heroTotal = heroSlides.length;
+
+            if (heroTotal) {
+                const startsReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const initialIndex = Number(hero.dataset.initialSlide);
+                let activeIndex = Number.isInteger(initialIndex) && initialIndex >= 0 && initialIndex < heroTotal ? initialIndex : 0;
+                let heroTimer = null;
+                let touchStartX = null;
+
+                const showHeroSlide = (index) => {
+                    activeIndex = (index + heroTotal) % heroTotal;
+                    heroSlides.forEach((slide, position) => {
+                        const isActive = position === activeIndex;
+                        slide.classList.toggle('is-active', isActive);
+                        if (isActive) {
+                            slide.removeAttribute('aria-hidden');
+                        } else {
+                            slide.setAttribute('aria-hidden', 'true');
+                        }
+                    });
+                    heroImages.forEach((image, position) => image.classList.toggle('is-active', position === activeIndex));
+                    heroDots.forEach((dot, position) => dot.classList.toggle('is-active', position === activeIndex));
+                    if (heroCounter) {
+                        heroCounter.textContent = `${activeIndex + 1} / ${heroTotal}`;
+                    }
+                };
+
+                const restartHeroRotation = () => {
+                    if (heroTimer) clearInterval(heroTimer);
+                    if (heroTotal < 2 || startsReduced) return;
+                    heroTimer = setInterval(() => showHeroSlide(activeIndex + 1), HERO_ROTATE_MS);
+                };
+
+                const goToHeroSlide = (index) => {
+                    showHeroSlide(index);
+                    restartHeroRotation();
+                };
+
+                hero.querySelectorAll('[data-hero-step]').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        goToHeroSlide(activeIndex + Number(button.dataset.heroStep));
+                    });
+                });
+
+                heroDots.forEach((dot, position) => {
+                    dot.addEventListener('click', () => goToHeroSlide(position));
+                });
+
+                hero.addEventListener('mouseenter', () => {
+                    if (heroTimer) clearInterval(heroTimer);
+                });
+                hero.addEventListener('mouseleave', restartHeroRotation);
+                hero.addEventListener('touchstart', (event) => {
+                    touchStartX = event.changedTouches[0]?.clientX ?? null;
+                }, { passive: true });
+                hero.addEventListener('touchend', (event) => {
+                    if (touchStartX === null) return;
+                    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+                    const distance = touchEndX - touchStartX;
+                    if (Math.abs(distance) > 50) {
+                        goToHeroSlide(activeIndex + (distance < 0 ? 1 : -1));
+                    }
+                    touchStartX = null;
+                }, { passive: true });
+
+                restartHeroRotation();
+            }
+        }
+
+        document.querySelectorAll('[data-scroll]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const track = document.getElementById(button.dataset.scroll);
+                if (track) {
+                    track.scrollBy({
+                        left: track.clientWidth * Number(button.dataset.direction),
+                        behavior: 'smooth',
+                    });
+                }
+            });
+        });
+
+        const formatFilterNumber = (value) => Number(value).toLocaleString('uz-UZ');
+        document.querySelectorAll('[data-filter-target]').forEach((range) => {
+            range.addEventListener('input', () => {
+                const target = document.getElementById(range.dataset.filterTarget);
+                if (target) target.value = range.value;
+
+                if (range.dataset.filterTarget === 'floor-filter') {
+                    document.getElementById('floor-output').textContent = `${range.value}-qavat`;
+                } else if (range.dataset.filterTarget.startsWith('area-')) {
+                    const minimum = document.getElementById('area-min-filter').value || document.querySelector('[data-filter-target="area-min-filter"]').value;
+                    const maximum = document.getElementById('area-max-filter').value || document.querySelector('[data-filter-target="area-max-filter"]').value;
+                    document.getElementById('area-output').textContent = `${minimum} — ${maximum}`;
+                } else {
+                    const minimum = document.getElementById('price-min-filter').value || document.querySelector('[data-filter-target="price-min-filter"]').value;
+                    const maximum = document.getElementById('price-max-filter').value || document.querySelector('[data-filter-target="price-max-filter"]').value;
+                    document.getElementById('price-output').textContent = `${formatFilterNumber(minimum)} — ${formatFilterNumber(maximum)}`;
+                }
+            });
+        });
+
+        const contactForm = document.getElementById('contact-form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const name = encodeURIComponent(document.getElementById('contact-name').value.trim());
+                const phone = encodeURIComponent(document.getElementById('contact-phone').value.trim());
+                window.location.href = `mailto:xansaroyuz@gmail.com?subject=Saytdan%20ariza&body=Ism:%20${name}%0ATelefon:%20${phone}`;
+            });
+        }
+
+        const officeMap = document.querySelector('.office-map');
+        document.querySelectorAll('.office-item').forEach((office) => office.addEventListener('click', () => {
+            document.querySelectorAll('.office-item').forEach((item) => item.classList.remove('is-selected'));
+            office.classList.add('is-selected');
+            if (officeMap && office.dataset.mapQuery) {
+                officeMap.src = `https://www.google.com/maps?q=${encodeURIComponent(office.dataset.mapQuery)}&output=embed`;
+            }
+        }));
+
+        const apartmentRequestForm = document.getElementById('apartment-request-form');
+        if (apartmentRequestForm) {
+            const feedback = document.getElementById('apartment-request-feedback');
+            apartmentRequestForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                feedback.textContent = '';
+                try {
+                    const response = await fetch(apartmentRequestForm.action, {
+                        method: 'POST',
+                        body: new FormData(apartmentRequestForm),
+                        headers: { 'X-CSRFToken': apartmentRequestForm.querySelector('[name=csrfmiddlewaretoken]').value },
+                    });
+                    const result = await response.json();
+                    const language = localStorage.getItem('xonsaroy-lang') || 'uz';
+                    feedback.textContent = result.success
+                        ? ({ uz: 'Arizangiz yuborildi.', ru: 'Заявка отправлена.', en: 'Your request has been sent.' }[language])
+                        : (result.message || 'Xatolik yuz berdi.');
+                    if (result.success) apartmentRequestForm.reset();
+                } catch {
+                    feedback.textContent = 'Xatolik yuz berdi. Qayta urinib ko‘ring.';
+                }
+            });
+        }
+
+        // Apartment AJAX Filtering (No page reload)
+        const filterForm = document.getElementById('apartment-filter-form');
+        const apartmentGrid = document.getElementById('apartment-grid');
+        const apartmentCountNumber = document.getElementById('apartment-count-number') || document.querySelector('.apartment-count strong');
+        const roomsFilter = document.getElementById('rooms-filter');
+        const categorySelect = document.getElementById('apartment-category-select');
+        const clearFiltersLink = document.getElementById('clear-filters-link');
+
+        let filterAbortController = null;
+
+        async function applyApartmentFilters(updateUrl = true) {
+            if (!filterForm || !apartmentGrid) return;
+            if (filterAbortController) filterAbortController.abort();
+            filterAbortController = new AbortController();
+
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                if (value !== '' && value !== null) {
+                    params.append(key, value);
+                }
+            }
+            params.set('ajax', '1');
+
+            apartmentGrid.style.transition = 'opacity 0.2s ease';
+            apartmentGrid.style.opacity = '0.5';
+            apartmentGrid.style.pointerEvents = 'none';
+
+            try {
+                const response = await fetch(`/?${params.toString()}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: filterAbortController.signal,
+                });
+                if (!response.ok) throw new Error('Filter fetch error');
+                const data = await response.json();
+                if (data.success) {
+                    apartmentGrid.innerHTML = data.html;
+                    if (apartmentCountNumber) {
+                        apartmentCountNumber.textContent = data.count;
+                    }
+                    const currentLang = localStorage.getItem('xonsaroy-lang') || 'uz';
+                    if (typeof applyLanguage === 'function') {
+                        applyLanguage(currentLang);
+                    }
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Apartment AJAX filtering error:', err);
+                }
+            } finally {
+                apartmentGrid.style.opacity = '1';
+                apartmentGrid.style.pointerEvents = 'auto';
+            }
+
+            if (updateUrl) {
+                params.delete('ajax');
+                const newQuery = params.toString();
+                const newUrl = newQuery ? `?${newQuery}#apartments` : window.location.pathname + '#apartments';
+                window.history.replaceState(null, '', newUrl);
+            }
+        }
+
+        if (filterForm) {
+            filterForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                applyApartmentFilters();
+            });
+        }
+
+        if (categorySelect) {
+            categorySelect.addEventListener('change', () => {
+                applyApartmentFilters();
+            });
+        }
+
+        document.querySelectorAll('#room-options .room-option').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                document.querySelectorAll('#room-options .room-option').forEach(b => b.classList.remove('is-selected'));
+                btn.classList.add('is-selected');
+                if (roomsFilter) roomsFilter.value = btn.dataset.room ?? '';
+                applyApartmentFilters();
+            });
+        });
+
+        document.querySelectorAll('[data-filter-target]').forEach((range) => {
+            range.addEventListener('change', () => {
+                applyApartmentFilters();
+            });
+        });
+
+        if (clearFiltersLink) {
+            clearFiltersLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (categorySelect) categorySelect.value = 'all';
+                if (roomsFilter) roomsFilter.value = '';
+                document.querySelectorAll('#room-options .room-option').forEach((b, idx) => {
+                    b.classList.toggle('is-selected', idx === 0);
+                });
+                const floorFilter = document.getElementById('floor-filter');
+                if (floorFilter) floorFilter.value = '';
+                const floorRange = document.querySelector('[data-filter-target="floor-filter"]');
+                if (floorRange) floorRange.value = '1';
+                const floorOut = document.getElementById('floor-output');
+                if (floorOut) {
+                    const dict = (typeof translations !== 'undefined' ? (translations[localStorage.getItem('xonsaroy-lang') || 'uz'] || translations.uz) : {});
+                    floorOut.textContent = dict.allLabel || 'Barchasi';
+                }
+
+                const areaMin = document.getElementById('area-min-filter');
+                const areaMax = document.getElementById('area-max-filter');
+                if (areaMin) areaMin.value = '';
+                if (areaMax) areaMax.value = '';
+                const areaMinRange = document.querySelector('[data-filter-target="area-min-filter"]');
+                const areaMaxRange = document.querySelector('[data-filter-target="area-max-filter"]');
+                if (areaMinRange) areaMinRange.value = '33';
+                if (areaMaxRange) areaMaxRange.value = '110';
+                const areaOut = document.getElementById('area-output');
+                if (areaOut) areaOut.textContent = '33 — 110';
+
+                const priceMin = document.getElementById('price-min-filter');
+                const priceMax = document.getElementById('price-max-filter');
+                if (priceMin) priceMin.value = '';
+                if (priceMax) priceMax.value = '';
+                const priceMinRange = document.querySelector('[data-filter-target="price-min-filter"]');
+                const priceMaxRange = document.querySelector('[data-filter-target="price-max-filter"]');
+                if (priceMinRange) priceMinRange.value = '350000000';
+                if (priceMaxRange) priceMaxRange.value = '1350000000';
+                const priceOut = document.getElementById('price-output');
+                if (priceOut) priceOut.textContent = `${Number('350000000').toLocaleString('uz-UZ')} — ${Number('1350000000').toLocaleString('uz-UZ')}`;
+
+                applyApartmentFilters();
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+{% load static %}
+<!doctype html>
+<html lang="uz">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f4f1">
+    <title>{% block title %}Hisobga kirish{% endblock %} | Xon Saroy</title>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=8">
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <a class="auth-logo" href="{% url 'home' %}" aria-label="Bosh sahifaga qaytish">
+            <img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy">
+        </a>
+        <section class="auth-panel">
+            {% block content %}{% endblock %}
+        </section>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <button type="button" class="language-switch" id="lang-toggle" aria-label="Tilni o‘zgartirish">UZ</button>
+            <a class="auth-back" href="{% url 'home' %}" id="auth-back-link">← Bosh sahifaga qaytish</a>
+        </div>
+    </main>
+    <script>
+        (() => {
+            const translations = {
+                uz: {
+                    back: '← Bosh sahifaga qaytish',
+                    title: 'Profil',
+                    intro: 'Shaxsiy ma’lumotlaringiz va profil rasmingizni boshqaring.',
+                    avatar: 'Profil rasmi',
+                    save: 'Profilni saqlash'
+                },
+                ru: {
+                    back: '← Вернуться на главную',
+                    title: 'Профиль',
+                    intro: 'Управляйте своей личной информацией и фото профиля.',
+                    avatar: 'Фото профиля',
+                    save: 'Сохранить профиль'
+                },
+                en: {
+                    back: '← Back to home',
+                    title: 'Profile',
+                    intro: 'Manage your personal information and profile photo.',
+                    avatar: 'Profile photo',
+                    save: 'Save profile'
+                }
+            };
+            const langOrder = ['uz', 'ru', 'en'];
+            const storageKey = 'xonsaroy-lang';
+            const getLang = () => {
+                const saved = localStorage.getItem(storageKey);
+                return langOrder.includes(saved) ? saved : 'uz';
+            };
+            const applyLanguage = (lang) => {
+                localStorage.setItem(storageKey, lang);
+                const dict = translations[lang];
+                const link = document.getElementById('auth-back-link');
+                if (link) link.textContent = dict.back;
+                const title = document.getElementById('profile-title');
+                const intro = document.getElementById('profile-intro');
+                const avatar = document.getElementById('profile-avatar-label');
+                const save = document.getElementById('profile-submit');
+                if (title) title.textContent = dict.title;
+                if (intro) intro.textContent = dict.intro;
+                if (avatar) avatar.textContent = dict.avatar;
+                if (save) save.textContent = dict.save;
+                const toggle = document.getElementById('lang-toggle');
+                if (toggle) {
+                    toggle.textContent = lang.toUpperCase();
+                    toggle.setAttribute('aria-label', 'Change language');
+                }
+            };
+            const toggle = document.getElementById('lang-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const current = getLang();
+                    const currentIndex = langOrder.indexOf(current);
+                    const next = langOrder[(currentIndex + 1) % langOrder.length];
+                    applyLanguage(next);
+                });
+            }
+            applyLanguage(getLang());
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+{% load static socialaccount %}
+<!doctype html>
+<html lang="uz">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ro‘yxatdan o‘tish — Xon Saroy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f7f7f8; }
+        .purple-btn { background-color: #5c4683; color: white; transition: all 0.2s ease; }
+        .purple-btn:hover { background-color: #4c386d; }
+        .oauth-button { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid #dedbe1; border-radius: 10px; color: #29252f; font-size: 12px; font-weight: 700; }
+        .oauth-button:hover { background: #faf9fb; }
+        .oauth-divider { margin: 20px 0 12px; color: #77717e; font-size: 11px; text-align: center; }
+        .oauth-disabled { color: #77717e; font-size: 10px; text-align: center; }
+    </style>
+</head>
+<body class="bg-[#f7f7f8] text-gray-900 min-h-screen flex items-center justify-center p-4">
+    <div class="absolute top-4 right-4 z-10">
+        <button type="button" class="language-switch" id="lang-toggle" aria-label="Tilni o‘zgartirish">UZ</button>
+    </div>
+    <div class="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-200 shadow-xl">
+        <div class="text-center mb-8">
+            <a href="{% url 'home' %}" class="inline-block mb-4">
+                <img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy" class="h-10 mx-auto">
+            </a>
+            <h1 id="register-title" class="text-2xl font-black text-gray-900">Hisob yarating</h1>
+            <p id="register-subtitle" class="text-gray-500 text-xs mt-1">Xon Saroy xizmatlaridan foydalanish uchun ro‘yxatdan o‘ting</p>
+        </div>
+
+        {% if form.errors %}
+            <div id="register-error" class="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-medium">
+                Iltimos, kiritilgan ma'lumotlarni tekshiring.
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label id="register-username-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Foydalanuvchi nomi</label>
+                {{ form.username }}
+            </div>
+            <div>
+                <label id="register-email-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Elektron pochta</label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label id="register-password1-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Parol</label>
+                {{ form.password1 }}
+            </div>
+            <div>
+                <label id="register-password2-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Parolni tasdiqlang</label>
+                {{ form.password2 }}
+            </div>
+            <button id="register-submit" type="submit" class="w-full purple-btn py-3 rounded-xl font-bold text-xs shadow-lg shadow-[#5c4683]/20">
+                Ro‘yxatdan o‘tish
+            </button>
+        </form>
+
+        <p id="register-divider" class="oauth-divider">Yoki davom eting</p>
+        {% if google_oauth_enabled %}
+            <a id="google-register-link" class="oauth-button" href="{% provider_login_url 'google' process='login' %}"><span class="google-mark">G</span> Google bilan ro‘yxatdan o‘tish</a>
+        {% else %}
+            <p id="google-register-text" class="oauth-disabled">Google OAuth uchun Client ID va Secret sozlang.</p>
+        {% endif %}
+        {% if github_oauth_enabled %}
+            <a id="github-register-link" class="oauth-button mt-2" href="{% provider_login_url 'github' process='login' %}"><span class="github-mark">GH</span> GitHub bilan ro‘yxatdan o‘tish</a>
+        {% else %}
+            <p id="github-register-text" class="oauth-disabled mt-2">GitHub OAuth uchun Client ID va Secret sozlang.</p>
+        {% endif %}
+
+        <div class="mt-6 text-center text-xs text-gray-500 font-medium">
+            <span id="register-switch-prefix">Hisobingiz bormi?</span> <a id="register-switch-link" href="{% url 'login' %}" class="text-[#5c4683] font-bold hover:underline">Kirish</a>
+        </div>
+    </div>
+    <script>
+        (() => {
+            const storageKey = 'xonsaroy-lang';
+            const langOrder = ['uz', 'ru', 'en'];
+            const translations = {
+                uz: {
+                    title: 'Hisob yarating',
+                    subtitle: 'Xon Saroy xizmatlaridan foydalanish uchun ro‘yxatdan o‘ting',
+                    username: 'Foydalanuvchi nomi',
+                    email: 'Elektron pochta',
+                    password1: 'Parol',
+                    password2: 'Parolni tasdiqlang',
+                    submit: 'Ro‘yxatdan o‘tish',
+                    divider: 'Yoki davom eting',
+                    google: 'Google bilan ro‘yxatdan o‘tish',
+                    github: 'GitHub bilan ro‘yxatdan o‘tish',
+                    switchPrefix: 'Hisobingiz bormi?',
+                    switchLink: 'Kirish',
+                    googleNotice: 'Google OAuth uchun Client ID va Secret sozlang.',
+                    githubNotice: 'GitHub OAuth uchun Client ID va Secret sozlang.'
+                },
+                ru: {
+                    title: 'Создать аккаунт',
+                    subtitle: 'Зарегистрируйтесь, чтобы пользоваться услугами Xon Saroy',
+                    username: 'Имя пользователя',
+                    email: 'Электронная почта',
+                    password1: 'Пароль',
+                    password2: 'Подтвердите пароль',
+                    submit: 'Регистрация',
+                    divider: 'Или продолжить',
+                    google: 'Продолжить с Google',
+                    github: 'Продолжить с GitHub',
+                    switchPrefix: 'Уже есть аккаунт?',
+                    switchLink: 'Войти',
+                    googleNotice: 'Для Google OAuth нужно настроить Client ID и Secret.',
+                    githubNotice: 'Для GitHub OAuth нужно настроить Client ID и Secret.'
+                },
+                en: {
+                    title: 'Create an account',
+                    subtitle: 'Register to use Xon Saroy services',
+                    username: 'Username',
+                    email: 'Email',
+                    password1: 'Password',
+                    password2: 'Confirm password',
+                    submit: 'Sign up',
+                    divider: 'Or continue',
+                    google: 'Continue with Google',
+                    github: 'Continue with GitHub',
+                    switchPrefix: 'Already have an account?',
+                    switchLink: 'Login',
+                    googleNotice: 'Google OAuth requires Client ID and Secret to be configured.',
+                    githubNotice: 'GitHub OAuth requires Client ID and Secret to be configured.'
+                }
+            };
+
+            const getLang = () => {
+                const saved = localStorage.getItem(storageKey);
+                return langOrder.includes(saved) ? saved : 'uz';
+            };
+
+            const applyLanguage = (lang) => {
+                localStorage.setItem(storageKey, lang);
+                document.documentElement.lang = lang;
+                const dict = translations[lang] || translations.uz;
+
+                const title = document.getElementById('register-title');
+                const subtitle = document.getElementById('register-subtitle');
+                const username = document.getElementById('register-username-label');
+                const email = document.getElementById('register-email-label');
+                const password1 = document.getElementById('register-password1-label');
+                const password2 = document.getElementById('register-password2-label');
+                const submit = document.getElementById('register-submit');
+                const divider = document.getElementById('register-divider');
+                const switchPrefix = document.getElementById('register-switch-prefix');
+                const switchLink = document.getElementById('register-switch-link');
+
+                if (title) title.textContent = dict.title;
+                if (subtitle) subtitle.textContent = dict.subtitle;
+                if (username) username.textContent = dict.username;
+                if (email) email.textContent = dict.email;
+                if (password1) password1.textContent = dict.password1;
+                if (password2) password2.textContent = dict.password2;
+                if (submit) submit.textContent = dict.submit;
+                if (divider) divider.textContent = dict.divider;
+                if (switchPrefix) switchPrefix.textContent = dict.switchPrefix;
+                if (switchLink) switchLink.textContent = dict.switchLink;
+
+                const googleLink = document.getElementById('google-register-link');
+                if (googleLink) googleLink.innerHTML = '<span class="google-mark">G</span> ' + dict.google;
+
+                const githubLink = document.getElementById('github-register-link');
+                if (githubLink) githubLink.innerHTML = '<span class="github-mark">GH</span> ' + dict.github;
+
+                const googleText = document.getElementById('google-register-text');
+                if (googleText) googleText.textContent = dict.googleNotice;
+
+                const githubText = document.getElementById('github-register-text');
+                if (githubText) githubText.textContent = dict.githubNotice;
+
+                const toggle = document.getElementById('lang-toggle');
+                if (toggle) {
+                    toggle.textContent = lang.toUpperCase();
+                    toggle.setAttribute('aria-label', 'Change language');
+                }
+            };
+
+            const toggle = document.getElementById('lang-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const current = getLang();
+                    const currentIndex = langOrder.indexOf(current);
+                    const nextLang = langOrder[(currentIndex + 1) % langOrder.length];
+                    applyLanguage(nextLang);
+                });
+            }
+
+            applyLanguage(getLang());
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+{% extends "account/base_auth.html" %}
+{% load allauth account socialaccount %}
+{% block title %}Ro‘yxatdan o‘tish{% endblock %}
+{% block content %}
+    <span class="auth-eyebrow">XON SAROY HISOBI</span>
+    <h1 id="auth-title">Hisob yarating</h1>
+    <p class="auth-intro" id="auth-intro">Yangiliklar va loyihalar haqida ma’lumot oling.</p>
+    {% if form.non_field_errors %}<div class="auth-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <form class="auth-form" method="post" action="{% url 'account_signup' %}">
+        {% csrf_token %}
+        {{ redirect_field }}
+        <label for="id_email" id="signup-email-label">Elektron pochta</label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="auth-errors">{{ form.email.errors }}</div>{% endif %}
+        <label for="id_password1" id="signup-password1-label">Parol</label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}<div class="auth-errors">{{ form.password1.errors }}</div>{% endif %}
+        <label for="id_password2" id="signup-password2-label">Parolni tasdiqlang</label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}<div class="auth-errors">{{ form.password2.errors }}</div>{% endif %}
+        <button class="auth-submit" type="submit" id="signup-submit">Ro‘yxatdan o‘tish</button>
+    </form>
+    <div class="auth-divider"><span id="auth-divider-text">yoki</span></div>
+    {% if google_oauth_enabled %}
+        <a class="google-button" href="{% provider_login_url 'google' process='login' %}" id="google-oauth-link"><span class="google-mark">G</span> Google orqali davom etish</a>
+    {% else %}
+        <button class="google-button google-button-disabled" type="button" disabled><span class="google-mark">G</span> <span id="google-oauth-disabled">Google orqali davom etish</span></button>
+        <p class="oauth-notice" id="oauth-google-text">Google OAuth uchun Client ID va Secret sozlanishi kerak.</p>
+    {% endif %}
+    {% if github_oauth_enabled %}
+        <a class="github-button" href="{% provider_login_url 'github' process='login' %}" id="github-oauth-link"><span class="github-mark">&#xe9b1;</span> GitHub orqali davom etish</a>
+    {% else %}
+        <button class="github-button github-button-disabled" type="button" disabled><span class="github-mark">&#xe9b1;</span> <span id="github-oauth-disabled">GitHub orqali davom etish</span></button>
+        <p class="oauth-notice" id="oauth-github-text">GitHub OAuth uchun Client ID va Secret sozlanishi kerak.</p>
+    {% endif %}
+    <p class="auth-switch" id="auth-switch-text">Hisobingiz bormi? <a href="{% url 'account_login' %}" id="login-link">Kirish</a></p>
+    <script>
+        (() => {
+            const translations = {
+                uz: {
+                    title: 'Hisob yarating', intro: 'Yangiliklar va loyihalar haqida ma’lumot oling.', email: 'Elektron pochta', password1: 'Parol', password2: 'Parolni tasdiqlang', submit: 'Ro‘yxatdan o‘tish', divider: 'yoki', google: 'Google orqali davom etish', github: 'GitHub orqali davom etish', login: 'Kirish', googleNotice: 'Google OAuth uchun Client ID va Secret sozlanishi kerak.', githubNotice: 'GitHub OAuth uchun Client ID va Secret sozlanishi kerak.', switchText: 'Hisobingiz bormi? '
+                },
+                ru: {
+                    title: 'Создайте аккаунт', intro: 'Получайте новости и информацию о проектах.', email: 'Электронная почта', password1: 'Пароль', password2: 'Подтвердите пароль', submit: 'Регистрация', divider: 'или', google: 'Продолжить с Google', github: 'Продолжить с GitHub', login: 'Войти', googleNotice: 'Для Google OAuth нужно настроить Client ID и Secret.', githubNotice: 'Для GitHub OAuth нужно настроить Client ID и Secret.', switchText: 'Уже есть аккаунт? '
+                },
+                en: {
+                    title: 'Create an account', intro: 'Get updates and project information.', email: 'Email', password1: 'Password', password2: 'Confirm password', submit: 'Sign up', divider: 'or', google: 'Continue with Google', github: 'Continue with GitHub', login: 'Login', googleNotice: 'Google OAuth requires Client ID and Secret to be configured.', githubNotice: 'GitHub OAuth requires Client ID and Secret to be configured.', switchText: 'Already have an account? '
+                }
+            };
+            const langOrder = ['uz', 'ru', 'en'];
+            const stored = localStorage.getItem('xonsaroy-lang');
+            const lang = langOrder.includes(stored) ? stored : 'uz';
+            const dict = translations[lang];
+            document.getElementById('auth-title').textContent = dict.title;
+            document.getElementById('auth-intro').textContent = dict.intro;
+            document.getElementById('signup-email-label').textContent = dict.email;
+            document.getElementById('signup-password1-label').textContent = dict.password1;
+            document.getElementById('signup-password2-label').textContent = dict.password2;
+            document.getElementById('signup-submit').textContent = dict.submit;
+            document.getElementById('auth-divider-text').textContent = dict.divider;
+            const googleEl = document.getElementById('google-oauth-link') || document.getElementById('google-oauth-disabled');
+            const githubEl = document.getElementById('github-oauth-link') || document.getElementById('github-oauth-disabled');
+            if (googleEl) googleEl.textContent = dict.google;
+            if (githubEl) githubEl.textContent = dict.github;
+            const switchText = document.getElementById('auth-switch-text');
+            if (switchText) switchText.innerHTML = `${dict.switchText} <a href="{% url 'account_login' %}" id="login-link">${dict.login}</a>`;
+            const googleNotice = document.getElementById('oauth-google-text');
+            if (googleNotice) googleNotice.textContent = dict.googleNotice;
+            const githubNotice = document.getElementById('oauth-github-text');
+            if (githubNotice) githubNotice.textContent = dict.githubNotice;
+        })();
+    </script>
+{% endblock %}

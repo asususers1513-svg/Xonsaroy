@@ -1,0 +1,42 @@
+{% for apartment in apartments %}
+    <article class="apartment-card"
+             data-id="{{ apartment.id }}"
+             data-rooms="{{ apartment.rooms }}"
+             data-floor="{{ apartment.floor }}"
+             data-area="{{ apartment.area }}"
+             data-price="{{ apartment.price|floatformat:0 }}"
+             data-m2-price="{{ apartment.m2_price|floatformat:0 }}"
+             data-down-payment="{{ apartment.down_payment|floatformat:0 }}"
+             data-monthly-payment="{{ apartment.monthly_payment|floatformat:0 }}"
+             data-title="{{ apartment.display_title }}"
+             data-project-name="{{ apartment.project.name|default:'Xon Saroy' }}"
+             data-category="{{ apartment.project.category.name|default:'Turar joy majmuasi' }}"
+             data-status="{{ apartment.project.get_status_display|default:'Jarayonda' }}"
+             data-status-code="{{ apartment.project.status|default:'in_progress' }}"
+             data-description="{{ apartment.project.description|default:'Zamonaviy arxitektura, qulay infratuzilma, 9 ballik seysmik chidamlilik va yerosti avtoturargohi.' }}"
+             data-image="{% if apartment.image_url %}{{ apartment.image_url }}{% elif apartment.image %}{{ apartment.image.url }}{% elif apartment.project.hero_image_url %}{{ apartment.project.hero_image_url }}{% elif apartment.project.hero_image %}{{ apartment.project.hero_image.url }}{% elif apartment.project.image_url %}{{ apartment.project.image_url }}{% elif apartment.project.image %}{{ apartment.project.image.url }}{% endif %}">
+        <span class="apartment-badge apartment-unit-label" data-rooms="{{ apartment.rooms }}">{{ apartment.rooms }} xonali</span>
+        {% if apartment.image_url %}
+            <img src="{{ apartment.image_url }}" alt="{{ apartment.area }} m² xonadon rejasi" loading="lazy">
+        {% elif apartment.image %}
+            <img src="{{ apartment.image.url }}" alt="{{ apartment.area }} m² xonadon rejasi" loading="lazy">
+        {% elif apartment.project.image_url %}
+            <img src="{{ apartment.project.image_url }}" alt="{{ apartment.display_title }}" loading="lazy">
+        {% elif apartment.project.image %}
+            <img src="{{ apartment.project.image.url }}" alt="{{ apartment.display_title }}" loading="lazy">
+        {% else %}
+            <div class="image-placeholder" role="img" aria-label="Xonadon rejasi yuklanmagan">Reja</div>
+        {% endif %}
+        <div class="apartment-data">
+            <strong class="apartment-unit-label" data-rooms="{{ apartment.rooms }}">{{ apartment.rooms }} xonali</strong>
+            <span>{{ apartment.area }} m² <i>·</i> <span class="apartment-floor-label" data-floor="{{ apartment.floor }}">{{ apartment.floor }}-qavat</span></span>
+            <span class="apartment-price" data-price="{{ apartment.price|floatformat:0 }}" style="display:block;margin-top:4px;color:#554274;font-weight:800;font-size:14px;">{{ apartment.price|floatformat:0 }} so'm</span>
+        </div>
+        <a class="apartment-details" href="#detail-modal-backdrop" data-apartment-link data-i18n="details">Batafsil</a>
+    </article>
+{% empty %}
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:#777;">
+        <h3 data-i18n="noApartmentsTitle">Mos xonadonlar topilmadi</h3>
+        <p style="font-size:13px;" data-i18n="noApartmentsDescription">Tanlangan filtr bo‘yicha mos xonadon mavjud emas.</p>
+    </div>
+{% endfor %}

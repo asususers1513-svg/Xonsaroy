@@ -1,0 +1,12 @@
+{% extends "account/base_auth.html" %}
+{% block title %}Chiqish{% endblock %}
+{% block content %}
+    <span class="auth-eyebrow">XON SAROY HISOBI</span>
+    <h1>Hisobdan chiqish</h1>
+    <p class="auth-intro">Hisobingizdan chiqishni tasdiqlaysizmi?</p>
+    <form class="auth-form" method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        <button class="auth-submit" type="submit">Chiqish</button>
+    </form>
+    <p class="auth-switch"><a href="{% url 'home' %}">Bekor qilish</a></p>
+{% endblock %}

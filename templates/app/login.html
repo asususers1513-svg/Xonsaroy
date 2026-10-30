@@ -1,0 +1,204 @@
+{% load static socialaccount %}
+<!doctype html>
+<html lang="uz">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kirish — Xon Saroy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f7f7f8; }
+        .purple-btn { background-color: #5c4683; color: white; transition: all 0.2s ease; }
+        .purple-btn:hover { background-color: #4c386d; }
+        .oauth-button { min-height: 42px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid #dedbe1; border-radius: 10px; color: #29252f; font-size: 12px; font-weight: 700; }
+        .oauth-button:hover { background: #faf9fb; }
+        .oauth-divider { margin: 20px 0 12px; color: #77717e; font-size: 11px; text-align: center; }
+        .oauth-disabled { color: #77717e; font-size: 10px; text-align: center; }
+        .language-switch {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #475569;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        .language-switch:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .google-mark { color: #4285f4; font-size: 16px; font-weight: 800; }
+        .github-mark { color: #24292e; font-size: 16px; font-weight: 800; }
+    </style>
+</head>
+<body class="bg-[#f7f7f8] text-gray-900 min-h-screen flex items-center justify-center p-4">
+    <div class="absolute top-4 right-4 z-10">
+        <button type="button" class="language-switch" id="lang-toggle" aria-label="Tilni o‘zgartirish">UZ</button>
+    </div>
+    <div class="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-200 shadow-xl">
+        <div class="text-center mb-8">
+            <a href="{% url 'home' %}" class="inline-block mb-4">
+                <img src="https://xonsaroy.uz/assets/96551977e212f9efb81e221cd96e26f43153c263-B76rgFTQ.png" alt="Xon Saroy" class="h-10 mx-auto">
+            </a>
+            <h1 id="login-title" class="text-2xl font-black text-gray-900">Hisobingizga kiring</h1>
+            <p id="login-subtitle" class="text-gray-500 text-xs mt-1">Xon Saroy xizmatlaridan foydalanishni davom ettiring</p>
+        </div>
+
+        {% if form.errors %}
+            <div id="login-error" class="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-medium">
+                Foydalanuvchi nomi yoki parol noto‘g‘ri.
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label id="login-username-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Foydalanuvchi nomi</label>
+                {{ form.username }}
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label id="login-password-label" class="block text-xs font-bold text-gray-600 uppercase tracking-wider">Parol</label>
+                    <a id="login-forgot-link" href="{% url 'password_reset_request' %}" class="text-xs text-[#5c4683] hover:underline font-semibold">Parolni unutdingizmi?</a>
+                </div>
+                {{ form.password }}
+            </div>
+
+            <button id="login-submit" type="submit" class="w-full purple-btn py-3 rounded-xl font-bold text-xs shadow-lg shadow-[#5c4683]/20">
+                Tizimga kirish
+            </button>
+        </form>
+
+        <p id="login-divider" class="oauth-divider">Yoki davom eting</p>
+        {% if google_oauth_enabled %}
+            <a id="google-login-link" class="oauth-button" href="{% provider_login_url 'google' process='login' %}"><span class="google-mark">G</span> Google bilan davom etish</a>
+        {% else %}
+            <p id="google-login-text" class="oauth-disabled">Google OAuth uchun Client ID va Secret sozlang.</p>
+        {% endif %}
+        {% if github_oauth_enabled %}
+            <a id="github-login-link" class="oauth-button" href="{% provider_login_url 'github' process='login' %}"><span class="github-mark">GH</span> GitHub bilan davom etish</a>
+        {% else %}
+            <p id="github-login-text" class="oauth-disabled">GitHub OAuth uchun Client ID va Secret sozlang.</p>
+        {% endif %}
+
+        <div class="mt-6 text-center text-xs text-gray-500 font-medium">
+            <span id="login-switch-prefix">Hisobingiz yo‘qmi?</span> <a id="login-switch-link" href="{% url 'register' %}" class="text-[#5c4683] font-bold hover:underline">Ro‘yxatdan o‘ting</a>
+        </div>
+    </div>
+    <script>
+        (() => {
+            const storageKey = 'xonsaroy-lang';
+            const langOrder = ['uz', 'ru', 'en'];
+            const translations = {
+                uz: {
+                    title: 'Hisobingizga kiring',
+                    subtitle: 'Xon Saroy xizmatlaridan foydalanishni davom ettiring',
+                    username: 'Foydalanuvchi nomi',
+                    password: 'Parol',
+                    submit: 'Tizimga kirish',
+                    divider: 'Yoki davom eting',
+                    google: 'Google bilan davom etish',
+                    github: 'GitHub bilan davom etish',
+                    signupPrefix: 'Hisobingiz yo‘qmi?',
+                    signupLink: 'Ro‘yxatdan o‘ting',
+                    forgot: 'Parolni unutdingizmi?',
+                    googleNotice: 'Google OAuth uchun Client ID va Secret sozlang.',
+                    githubNotice: 'GitHub OAuth uchun Client ID va Secret sozlang.'
+                },
+                ru: {
+                    title: 'Войдите в аккаунт',
+                    subtitle: 'Продолжайте пользоваться сервисами Xon Saroy',
+                    username: 'Имя пользователя',
+                    password: 'Пароль',
+                    submit: 'Войти',
+                    divider: 'Или продолжить',
+                    google: 'Продолжить с Google',
+                    github: 'Продолжить с GitHub',
+                    signupPrefix: 'Нет аккаунта?',
+                    signupLink: 'Зарегистрироваться',
+                    forgot: 'Забыли пароль?',
+                    googleNotice: 'Для Google OAuth нужно настроить Client ID и Secret.',
+                    githubNotice: 'Для GitHub OAuth нужно настроить Client ID и Secret.'
+                },
+                en: {
+                    title: 'Sign in to your account',
+                    subtitle: 'Continue using Xon Saroy services',
+                    username: 'Username',
+                    password: 'Password',
+                    submit: 'Sign in',
+                    divider: 'Or continue',
+                    google: 'Continue with Google',
+                    github: 'Continue with GitHub',
+                    signupPrefix: 'No account?',
+                    signupLink: 'Sign up',
+                    forgot: 'Forgot password?',
+                    googleNotice: 'Google OAuth requires Client ID and Secret to be configured.',
+                    githubNotice: 'GitHub OAuth requires Client ID and Secret to be configured.'
+                }
+            };
+
+            const getLang = () => {
+                const saved = localStorage.getItem(storageKey);
+                return langOrder.includes(saved) ? saved : 'uz';
+            };
+
+            const applyLanguage = (lang) => {
+                localStorage.setItem(storageKey, lang);
+                document.documentElement.lang = lang;
+                const dict = translations[lang] || translations.uz;
+
+                const title = document.getElementById('login-title');
+                const subtitle = document.getElementById('login-subtitle');
+                const username = document.getElementById('login-username-label');
+                const password = document.getElementById('login-password-label');
+                const forgot = document.getElementById('login-forgot-link');
+                const submit = document.getElementById('login-submit');
+                const divider = document.getElementById('login-divider');
+                const switchPrefix = document.getElementById('login-switch-prefix');
+                const switchLink = document.getElementById('login-switch-link');
+
+                if (title) title.textContent = dict.title;
+                if (subtitle) subtitle.textContent = dict.subtitle;
+                if (username) username.textContent = dict.username;
+                if (password) password.textContent = dict.password;
+                if (forgot) forgot.textContent = dict.forgot;
+                if (submit) submit.textContent = dict.submit;
+                if (divider) divider.textContent = dict.divider;
+                if (switchPrefix) switchPrefix.textContent = dict.signupPrefix;
+                if (switchLink) switchLink.textContent = dict.signupLink;
+
+                const googleLink = document.getElementById('google-login-link');
+                if (googleLink) googleLink.innerHTML = '<span class="google-mark">G</span> ' + dict.google;
+
+                const githubLink = document.getElementById('github-login-link');
+                if (githubLink) githubLink.innerHTML = '<span class="github-mark">GH</span> ' + dict.github;
+
+                const googleText = document.getElementById('google-login-text');
+                if (googleText) googleText.textContent = dict.googleNotice;
+
+                const githubText = document.getElementById('github-login-text');
+                if (githubText) githubText.textContent = dict.githubNotice;
+
+                const toggle = document.getElementById('lang-toggle');
+                if (toggle) {
+                    toggle.textContent = lang.toUpperCase();
+                    toggle.setAttribute('aria-label', 'Change language');
+                }
+            };
+
+            const toggle = document.getElementById('lang-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const current = getLang();
+                    const currentIndex = langOrder.indexOf(current);
+                    const nextLang = langOrder[(currentIndex + 1) % langOrder.length];
+                    applyLanguage(nextLang);
+                });
+            }
+
+            applyLanguage(getLang());
+        })();
+    </script>
+</body>
+</html>

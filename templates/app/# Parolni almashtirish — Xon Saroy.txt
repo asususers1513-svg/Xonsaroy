@@ -1,0 +1,7 @@
+# Parolni almashtirish — Xon Saroy
+
+
+# Parolni almashtirish
+Elektron pochtangizni kiriting. Biz sizga 10 daqiqa davomida amal qiluvchi 6 xonali tasdiqlash kodini yuboramiz.
+[← Kirish sahifasiga qaytish](http://127.0.0.1:8000/login/)
+[Bosh sahifa](http://127.0.0.1:8000/)

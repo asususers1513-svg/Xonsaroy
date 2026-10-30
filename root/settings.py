@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import importlib.util
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -19,6 +20,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env file
 load_dotenv(BASE_DIR / '.env')
+
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_OAUTH_ENABLED = bool(
+    GOOGLE_CLIENT_ID
+    and GOOGLE_CLIENT_SECRET
+    and importlib.util.find_spec('requests')
+    and importlib.util.find_spec('jwt')
+)
+
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID', '')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET', '')
+GITHUB_OAUTH_ENABLED = bool(
+    GITHUB_CLIENT_ID
+    and GITHUB_CLIENT_SECRET
+    and importlib.util.find_spec('requests')
+)
 
 
 # Quick-start development settings - unsuitable for production
@@ -31,20 +49,73 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-t5-^jr4n3z=g_2)co7&c64q%#g
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
+if DEBUG and 'testserver' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('testserver')
+
+AUTH_USER_MODEL = 'app.User'
 
 
-
-# Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'app',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 ]
+if GOOGLE_OAUTH_ENABLED:
+    INSTALLED_APPS.append('allauth.socialaccount.providers.google')
+if GITHUB_OAUTH_ENABLED:
+    INSTALLED_APPS.append('allauth.socialaccount.providers.github')
+
+JAZZMIN_SETTINGS = {
+    'site_title': 'Xon Saroy Admin',
+    'site_header': 'Xon Saroy',
+    'site_brand': 'Xon Saroy',
+    'welcome_sign': 'Xon Saroy boshqaruv paneli',
+    'copyright': 'Xon Saroy',
+    'search_model': ['app.Home', 'app.Apartment', 'app.Client'],
+    'topmenu_links': [
+        {'name': 'Saytni ko‘rish', 'url': '/', 'new_window': True},
+    ],
+    'show_sidebar': True,
+    'navigation_expanded': True,
+    'order_with_respect_to': ['app'],
+    'icons': {
+        'app': 'fas fa-building',
+        'app.user': 'fas fa-user',
+        'app.category': 'fas fa-tags',
+        'app.home': 'fas fa-city',
+        'app.apartment': 'fas fa-door-open',
+        'app.material': 'fas fa-cubes',
+        'app.client': 'fas fa-user-friends',
+        'app.salesoffice': 'fas fa-map-marker-alt',
+        'auth': 'fas fa-users-cog',
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    'theme': 'flatly',
+    'navbar': 'navbar-white navbar-light',
+    'sidebar': 'sidebar-dark-primary',
+    'brand_colour': 'navbar-primary',
+    'accent': 'accent-primary',
+    'button_classes': {
+        'primary': 'btn-primary',
+        'secondary': 'btn-secondary',
+        'info': 'btn-info',
+        'warning': 'btn-warning',
+        'danger': 'btn-danger',
+        'success': 'btn-success',
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -52,6 +123,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -68,6 +140,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'app.context_processors.authentication_options',
             ],
         },
     },
@@ -109,9 +182,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'uz'
 
-TIME_ZONE = 'asia/Tashkent'
+TIME_ZONE = 'Asia/Tashkent'
 
 USE_I18N = True
 
@@ -126,3 +199,66 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
+
+SITE_ID = 1
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'prompt': 'select_account'},
+    },
+    'github': {
+        'SCOPE': ['user:email'],
+    },
+}
+if GOOGLE_OAUTH_ENABLED:
+    SOCIALACCOUNT_PROVIDERS['google']['APP'] = {
+        'client_id': GOOGLE_CLIENT_ID,
+        'secret': GOOGLE_CLIENT_SECRET,
+        'key': '',
+    }
+if GITHUB_OAUTH_ENABLED:
+    SOCIALACCOUNT_PROVIDERS['github']['APP'] = {
+        'client_id': GITHUB_CLIENT_ID,
+        'secret': GITHUB_CLIENT_SECRET,
+        'key': '',
+    }
+
+SOCIALACCOUNT_ADAPTER = 'app.adapters.DebugSocialAccountAdapter'
+ 
+# Email configuration
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 't')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '').strip()
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '').replace(' ', '').strip()
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', 15))
+
+custom_email_backend = os.getenv('EMAIL_BACKEND', '').strip()
+if custom_email_backend:
+    EMAIL_BACKEND = custom_email_backend
+elif EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+custom_from = os.getenv('DEFAULT_FROM_EMAIL', '').strip()
+if custom_from:
+    DEFAULT_FROM_EMAIL = custom_from
+elif EMAIL_HOST_USER:
+    DEFAULT_FROM_EMAIL = f"Xon Saroy <{EMAIL_HOST_USER}>"
+else:
+    DEFAULT_FROM_EMAIL = 'Xon Saroy <noreply@xonsaroy.uz>'
+

@@ -1,0 +1,98 @@
+{% extends 'app/base_public.html' %}
+{% load static %}
+{% block title %}Hamkorlar uchun — Xon Saroy{% endblock %}
+{% block content %}
+<main class="public-page partners-page">
+    <header class="public-page-heading">
+        <h1 data-i18n="pageTitle">Hamkorlar uchun</h1>
+        <p data-i18n="pageDescription">Xon Saroy loyihalarini birgalikda rivojlantirish uchun hamkorlik imkoniyatlari.</p>
+    </header>
+    <section class="public-partner-grid" aria-label="Hamkorlik yo‘nalishlari">
+        <article class="public-partner-card">
+            <img src="{% static 'img/hero-vooha-328.webp' %}" alt="Vooha Residence turar joy loyihasi" loading="lazy">
+            <div><h2 data-i18n="investors">Investorlar uchun</h2><p data-i18n="investorsText">Shaffof moliyaviy model va istiqbolli qurilish loyihalariga sarmoya kiritish imkoniyati.</p><button type="button" data-interest="Investorlik hamkorligi" data-i18n="action">Hamkorlik qilish</button></div>
+        </article>
+        <article class="public-partner-card">
+            <img src="{% static 'img/hero-vatan-71.webp' %}" alt="Vatan Residence turar joy loyihasi" loading="lazy">
+            <div><h2 data-i18n="builders">Qurilish kompaniyalari uchun</h2><p data-i18n="buildersText">Qurilish loyihalarini amalga oshirishda pudrat va hamkorlik imkoniyatlari.</p><button type="button" data-interest="Qurilish bo‘yicha hamkorlik" data-i18n="action">Hamkorlik qilish</button></div>
+        </article>
+        <article class="public-partner-card">
+            <img src="{% static 'img/hero-ramazon-46.webp' %}" alt="Ramazon Residence turar joy loyihasi" loading="lazy">
+            <div><h2 data-i18n="suppliers">Material yetkazib beruvchilar</h2><p data-i18n="suppliersText">Sifatli qurilish materiallari va uzoq muddatli yetkazib berish bo‘yicha hamkorlik.</p><button type="button" data-interest="Material yetkazib berish bo‘yicha hamkorlik" data-i18n="action">Hamkorlik qilish</button></div>
+        </article>
+        <article class="public-partner-card">
+            <img src="{% static 'img/hero-muhabbat-387.webp' %}" alt="Muhabbat Shahri turar joy loyihasi" loading="lazy">
+            <div><h2 data-i18n="landowners">Yer va loyiha egalari uchun</h2><p data-i18n="landownersText">Yer maydoni yoki istiqbolli loyihangizni Xon Saroy bilan birga rivojlantiring.</p><button type="button" data-interest="Yer va loyiha bo‘yicha hamkorlik" data-i18n="action">Hamkorlik qilish</button></div>
+        </article>
+    </section>
+</main>
+<div class="public-dialog-backdrop" id="partner-dialog" hidden>
+    <section class="public-dialog" role="dialog" aria-modal="true" aria-labelledby="partner-dialog-title">
+        <button type="button" class="public-dialog-close" aria-label="Yopish" data-close-dialog>×</button>
+        <h2 id="partner-dialog-title" data-i18n="dialogTitle">Hamkorlik bo‘yicha ariza</h2>
+        <p data-i18n="dialogDescription">Ismingiz va telefon raqamingizni qoldiring, siz bilan bog‘lanamiz.</p>
+        <form id="partner-form" method="post" action="{% url 'contact_submit' %}">
+            {% csrf_token %}<input type="hidden" name="message" id="partner-message">
+            <label for="partner-name" data-i18n="nameLabel">Ismingiz</label><input id="partner-name" name="name" required>
+            <label for="partner-phone" data-i18n="phoneLabel">Telefon raqamingiz</label><input id="partner-phone" name="phone" type="tel" placeholder="+998" required>
+            <button type="submit" data-i18n="send">Ariza yuborish</button>
+            <p class="partner-feedback" id="partner-feedback" aria-live="polite"></p>
+        </form>
+    </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const storageKey = 'xonsaroy-lang';
+    const languages = ['uz', 'ru', 'en'];
+    const words = {
+        uz: { navProjects:'Loyihalar', navAbout:'Kompaniya haqida', navNews:'Yangiliklar', navPartners:'Hamkorlar uchun', navContacts:'Kontaktlar', apartmentShortcut:'Xonadon tanlash', pageTitle:'Hamkorlar uchun', pageDescription:'Xon Saroy loyihalarini birgalikda rivojlantirish uchun hamkorlik imkoniyatlari.', investors:'Investorlar uchun', investorsText:'Shaffof moliyaviy model va istiqbolli qurilish loyihalariga sarmoya kiritish imkoniyati.', builders:'Qurilish kompaniyalari uchun', buildersText:'Qurilish loyihalarini amalga oshirishda pudrat va hamkorlik imkoniyatlari.', suppliers:'Material yetkazib beruvchilar', suppliersText:'Sifatli qurilish materiallari va uzoq muddatli yetkazib berish bo‘yicha hamkorlik.', landowners:'Yer va loyiha egalari uchun', landownersText:'Yer maydoni yoki istiqbolli loyihangizni Xon Saroy bilan birga rivojlantiring.', action:'Hamkorlik qilish', dialogTitle:'Hamkorlik bo‘yicha ariza', dialogDescription:'Ismingiz va telefon raqamingizni qoldiring, siz bilan bog‘lanamiz.', nameLabel:'Ismingiz', phoneLabel:'Telefon raqamingiz', send:'Ariza yuborish', footerContact:'BOG‘LANISH', addressLabel:'MANZIL', footerAddress:'Toshkent tumani, TKAD ko‘chasi, 97', footerCallCenter:'ALOQA MARKAZI', copyright:'© Xon Saroy. Barcha huquqlar himoyalangan.', languageLabel:'Tilni o‘zgartirish' },
+        ru: { navProjects:'Проекты', navAbout:'О компании', navNews:'Новости', navPartners:'Партнёрам', navContacts:'Контакты', apartmentShortcut:'Выбрать квартиру', pageTitle:'Партнёрам', pageDescription:'Возможности сотрудничества для совместного развития проектов Xon Saroy.', investors:'Для инвесторов', investorsText:'Инвестируйте в перспективные строительные проекты с прозрачной финансовой моделью.', builders:'Для строительных компаний', buildersText:'Подрядные работы и сотрудничество при реализации строительных проектов.', suppliers:'Поставщикам материалов', suppliersText:'Поставки качественных строительных материалов на долгосрочной основе.', landowners:'Владельцам земли и проектов', landownersText:'Развивайте земельный участок или перспективный проект вместе с Xon Saroy.', action:'Сотрудничать', dialogTitle:'Заявка о сотрудничестве', dialogDescription:'Оставьте имя и номер телефона, и мы свяжемся с вами.', nameLabel:'Ваше имя', phoneLabel:'Ваш номер телефона', send:'Отправить заявку', footerContact:'СВЯЗАТЬСЯ', addressLabel:'АДРЕС', footerAddress:'Ташкентский район, улица ТКАД, 97', footerCallCenter:'КОЛЛ-ЦЕНТР', copyright:'© Xon Saroy. Все права защищены.', languageLabel:'Сменить язык' },
+        en: { navProjects:'Projects', navAbout:'About us', navNews:'News', navPartners:'Partners', navContacts:'Contacts', apartmentShortcut:'Choose an apartment', pageTitle:'For partners', pageDescription:'Partnership opportunities to develop Xon Saroy projects together.', investors:'For investors', investorsText:'Invest in promising construction projects with a transparent financial model.', builders:'For construction companies', buildersText:'Contracting and partnership opportunities for construction projects.', suppliers:'For material suppliers', suppliersText:'Long-term partnerships supplying quality construction materials.', landowners:'For land and project owners', landownersText:'Develop your land or promising project together with Xon Saroy.', action:'Partner with us', dialogTitle:'Partnership request', dialogDescription:'Leave your name and phone number and we will contact you.', nameLabel:'Your name', phoneLabel:'Your phone number', send:'Send request', footerContact:'CONTACT', addressLabel:'ADDRESS', footerAddress:'97 TKAD Street, Tashkent district', footerCallCenter:'CALL CENTER', copyright:'© Xon Saroy. All rights reserved.', languageLabel:'Change language' }
+    };
+    const applyLanguage = (language) => {
+        const dictionary = words[language] || words.uz;
+        localStorage.setItem(storageKey, language);
+        document.documentElement.lang = language;
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+            if (dictionary[element.dataset.i18n]) element.textContent = dictionary[element.dataset.i18n];
+        });
+        const toggle = document.getElementById('lang-toggle');
+        toggle.textContent = language.toUpperCase();
+        toggle.setAttribute('aria-label', dictionary.languageLabel);
+    };
+    const toggle = document.getElementById('lang-toggle');
+    toggle.addEventListener('click', () => {
+        const current = localStorage.getItem(storageKey) || 'uz';
+        applyLanguage(languages[(languages.indexOf(current) + 1) % languages.length]);
+    });
+    applyLanguage(languages.includes(localStorage.getItem(storageKey)) ? localStorage.getItem(storageKey) : 'uz');
+
+    const dialog = document.getElementById('partner-dialog');
+    const form = document.getElementById('partner-form');
+    const message = document.getElementById('partner-message');
+    const feedback = document.getElementById('partner-feedback');
+    document.querySelectorAll('[data-interest]').forEach((button) => button.addEventListener('click', () => {
+        message.value = button.dataset.interest;
+        dialog.hidden = false;
+        document.getElementById('partner-name').focus();
+    }));
+    document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => { dialog.hidden = true; }));
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.hidden = true; });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') dialog.hidden = true; });
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        feedback.textContent = '';
+        try {
+            const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value } });
+            const result = await response.json();
+            feedback.textContent = result.message || (result.success ? 'Yuborildi' : 'Xatolik yuz berdi');
+            if (result.success) form.reset();
+        } catch {
+            feedback.textContent = 'Xatolik yuz berdi. Qayta urinib ko‘ring.';
+        }
+    });
+})();
+</script>
+{% endblock %}

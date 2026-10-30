@@ -1,0 +1,72 @@
+{% extends "account/base_auth.html" %}
+{% block title %}Profil{% endblock %}
+{% block content %}
+    <span class="auth-eyebrow">XON SAROY HISOBI</span>
+    <h1 id="profile-title">Profil</h1>
+    <p class="auth-intro" id="profile-intro">Shaxsiy ma’lumotlaringiz, profil rasmingiz va parolingizni boshqaring.</p>
+    {% if request.user.avatar %}
+        <img class="profile-avatar" src="{{ request.user.avatar.url }}" alt="Profil rasmi">
+    {% else %}
+        <div class="profile-avatar-fallback" aria-label="Profil rasmi yo‘q">{{ request.user.username|slice:":1"|upper }}</div>
+    {% endif %}
+    {% if messages %}
+        {% for message in messages %}<p class="profile-message">{{ message }}</p>{% endfor %}
+    {% endif %}
+
+    <form class="auth-form profile-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="profile-form-fields">
+            <div class="profile-field">
+                <label for="id_email" id="profile-email-label">Elektron pochta</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="auth-errors">{{ form.email.errors }}</div>{% endif %}
+            </div>
+
+            <div class="profile-field">
+                <label for="id_telegram_id" id="profile-telegram-label">Telegram ID (Kodni Telegramga olish uchun)</label>
+                {{ form.telegram_id }}
+                {% if form.telegram_id.errors %}<div class="auth-errors">{{ form.telegram_id.errors }}</div>{% endif %}
+            </div>
+
+            <div class="profile-field">
+                <label for="id_avatar" id="profile-avatar-label">Profil rasmi</label>
+                {{ form.avatar }}
+                {% if form.avatar.errors %}<div class="auth-errors">{{ form.avatar.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="profile-password-box">
+            <h2>Parolni yangilash</h2>
+
+            <div class="profile-password-fields">
+                <div class="profile-field">
+                    <label for="id_old_password">Eski parol</label>
+                    {{ password_form.old_password }}
+                    {% if password_form.old_password.errors %}<div class="auth-errors">{{ password_form.old_password.errors }}</div>{% endif %}
+                </div>
+
+                <div class="profile-field">
+                    <label for="id_new_password1">Yangi parol</label>
+                    {{ password_form.new_password1 }}
+                    {% if password_form.new_password1.errors %}<div class="auth-errors">{{ password_form.new_password1.errors }}</div>{% endif %}
+                </div>
+
+                <div class="profile-field">
+                    <label for="id_new_password2">Yangi parolni tasdiqlang</label>
+                    {{ password_form.new_password2 }}
+                    {% if password_form.new_password2.errors %}<div class="auth-errors">{{ password_form.new_password2.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <p style="margin-top: 12px; font-size: 13px; color: #64748b; text-align: right;">
+                Eski parolingiz yodingizda yo‘qmi? 
+                <a href="{% url 'password_reset_request' %}?email={{ request.user.email }}" style="color: #5c4683; font-weight: 700; text-decoration: underline;">
+                    6 xonali kod orqali almashtirish →
+                </a>
+            </p>
+        </div>
+
+        <button class="auth-submit" type="submit" id="profile-submit">Profilni saqlash</button>
+    </form>
+    <p class="auth-switch"><a href="{% url 'home' %}" id="profile-back-link">Bosh sahifaga qaytish</a></p>
+{% endblock %}
