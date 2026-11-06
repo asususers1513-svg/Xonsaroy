@@ -35,7 +35,19 @@ DEBUG=False
 SECRET_KEY=<generated-secret>
 ALLOWED_HOSTS=yourusername.pythonanywhere.com
 CSRF_TRUSTED_ORIGINS=https://yourusername.pythonanywhere.com
+DJANGO_ADMIN_PATH=<private-random-path>
 ```
+
+Admin sahifasining maxsus manzilini terminalda yarating:
+
+```bash
+python -c "import secrets; print('panel-' + secrets.token_urlsafe(24))"
+```
+
+Chiqqan qiymatni `.env` faylidagi `DJANGO_ADMIN_PATH` ga yozing (`https://` yoki
+boshlang'ich `/` qo'shmang). Production'da standart `/admin/` bosh sahifaga
+yo'naltiriladi; boshqaruv paneli faqat siz belgilagan maxsus manzilda ochiladi.
+Maxsus manzil login/parol va Django staff ruxsatlarini almashtirmaydi.
 
 Custom domen ulangan bo'lsa, uni `ALLOWED_HOSTS` ro'yxatiga host nomi sifatida,
 `CSRF_TRUSTED_ORIGINS` ro'yxatiga esa `https://` bilan qo'shing. Bir nechta

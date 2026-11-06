@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import importlib.util
 import os
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
@@ -64,6 +65,12 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]
+DJANGO_ADMIN_PATH = os.getenv('DJANGO_ADMIN_PATH', 'admin').strip('/')
+if not re.fullmatch(r'[A-Za-z0-9_-]+', DJANGO_ADMIN_PATH):
+    raise ImproperlyConfigured('DJANGO_ADMIN_PATH must contain only letters, numbers, underscores, or hyphens.')
+if not DEBUG and DJANGO_ADMIN_PATH == 'admin':
+    raise ImproperlyConfigured('Set DJANGO_ADMIN_PATH to a custom path when DEBUG is False.')
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

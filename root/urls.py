@@ -3,6 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 from app.views import (
     home, login_view, register_view, logout_view, profile_view, contact_submit,
     contacts_view, partners_view,
@@ -24,7 +25,14 @@ urlpatterns = [
     path('password-reset/resend/', password_reset_resend_view, name='password_reset_resend'),
     path('accounts/password/reset/', password_reset_request_view, name='account_reset_password'),
     path('accounts/', include('allauth.urls')),
-    path('admin/', admin.site.urls),
 ]
+if settings.DJANGO_ADMIN_PATH == 'admin':
+    urlpatterns.append(path('admin/', admin.site.urls))
+else:
+    urlpatterns.extend([
+        path('admin/', RedirectView.as_view(pattern_name='home', permanent=False)),
+        path(f'{settings.DJANGO_ADMIN_PATH}/', admin.site.urls),
+    ])
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
