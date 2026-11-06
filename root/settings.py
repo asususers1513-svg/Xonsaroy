@@ -14,6 +14,7 @@ import importlib.util
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,14 +44,29 @@ GITHUB_OAUTH_ENABLED = bool(
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-t5-^jr4n3z=g_2)co7&c64q%#g)!d9ewc)6zt^hy8038z=e#$=')
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
+
+SECRET_KEY = os.getenv('SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Set SECRET_KEY in the environment when DEBUG is False.')
+    SECRET_KEY = 'django-insecure-development-only-key'
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
 if DEBUG and 'testserver' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('testserver')
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured('Set ALLOWED_HOSTS to your PythonAnywhere domain.')
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 AUTH_USER_MODEL = 'app.User'
 
@@ -194,11 +210,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 SITE_ID = 1
 AUTHENTICATION_BACKENDS = [
@@ -261,4 +278,3 @@ elif EMAIL_HOST_USER:
     DEFAULT_FROM_EMAIL = f"Xon Saroy <{EMAIL_HOST_USER}>"
 else:
     DEFAULT_FROM_EMAIL = 'Xon Saroy <noreply@xonsaroy.uz>'
-
