@@ -1,3 +1,5 @@
+import html
+import logging
 import os
 
 import requests
@@ -17,9 +19,13 @@ from .forms import (
     PasswordResetRequestForm, PasswordResetConfirmForm
 )
 
+logger = logging.getLogger(__name__)
+
 
 def send_telegram_message(chat_id, text):
-    bot_token = os.getenv('TELEGRAM_BOT_TOKEN', 'test-token').strip()
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
+    if not bot_token:
+        return False, 'Telegram bot tokeni serverda sozlanmagan.'
     if not chat_id:
         return False, 'Telegram ID not found.'
 
@@ -29,11 +35,15 @@ def send_telegram_message(chat_id, text):
         'parse_mode': 'HTML',
         'disable_web_page_preview': True,
     }
-    response = requests.post(
-        f'https://api.telegram.org/bot{bot_token}/sendMessage',
-        data=payload,
-        timeout=15,
-    )
+    try:
+        response = requests.post(
+            f'https://api.telegram.org/bot{bot_token}/sendMessage',
+            data=payload,
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        logger.error("Telegram xabarini yuborib bo'lmadi (%s).", type(exc).__name__)
+        return False, 'Telegram serveriga ulanib bo‘lmadi.'
     resp = response.json() if response.headers.get('Content-Type', '').startswith('application/json') else {}
     if resp.get('ok'):
         return True, 'Xabar yuborildi.'
@@ -53,14 +63,14 @@ def contact_submit(request):
     cleaned = form.cleaned_data
     telegram_id = str(cleaned.get('telegram_id') or '').strip()
     telegram_username = str(cleaned.get('telegram_username') or '').strip()
-    recipient_chat = telegram_id or os.getenv('TELEGRAM_ADMIN_CHAT_ID', '').strip()
+    recipient_chat = os.getenv('TELEGRAM_ADMIN_CHAT_ID', '').strip()
 
     text = (
         '<b>Yangi ariza</b>\n'
-        f'Ism: {cleaned["name"]}\n'
-        f'Telefon: {cleaned["phone"]}\n'
-        f'Telegram: @{telegram_username} ({telegram_id or "noma`lum"})\n\n'
-        f'{cleaned["message"]}'
+        f'Ism: {html.escape(cleaned["name"])}\n'
+        f'Telefon: {html.escape(cleaned["phone"])}\n'
+        f'Telegram: @{html.escape(telegram_username)} ({html.escape(telegram_id or "noma`lum")})\n\n'
+        f'{html.escape(cleaned["message"])}'
     )
 
     Lead.objects.create(
@@ -71,6 +81,12 @@ def contact_submit(request):
         source=Lead.Source.WEBSITE,
         note=cleaned.get("message", "")
     )
+
+    if not recipient_chat:
+        return JsonResponse({
+            'success': False,
+            'message': 'Arizangiz saqlandi, lekin Telegram admin ID serverda sozlanmagan.'
+        }, status=503)
 
     sent, message = send_telegram_message(recipient_chat, text)
     if sent:

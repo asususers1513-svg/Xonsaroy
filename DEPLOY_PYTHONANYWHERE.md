@@ -20,8 +20,8 @@ Agar hisobingizda Python 3.13 mavjud bo'lmasa, PythonAnywhere taklif qiladigan v
 
 ## 2. Maxfiy sozlamalar
 
-`~/demo_day/.env` faylini PythonAnywhere Files sahifasida yarating (`.env.example`
-namunasidan foydalaning). `SECRET_KEY` uchun konsolda yangi kalit yarating:
+`.env.example` faylidan foydalanib, PythonAnywhere Files sahifasida
+`~/demo_day/.env` faylini yarating. `SECRET_KEY` uchun konsolda yangi kalit yarating:
 
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
@@ -53,6 +53,20 @@ Custom domen ulangan bo'lsa, uni `ALLOWED_HOSTS` ro'yxatiga host nomi sifatida,
 `CSRF_TRUSTED_ORIGINS` ro'yxatiga esa `https://` bilan qo'shing. Bir nechta
 qiymatni vergul bilan ajrating. Telegram, email va Google/GitHub login ishlatilsa,
 tegishli o'zgaruvchilarni ham `.env` ga kiriting.
+
+Telegram bot va uning saytdagi tugmalari uchun `.env` ga quyidagilarni ham
+qo'shing. Tokenni BotFather beradi; tokenni chatga yoki GitHub'ga yubormang.
+
+```dotenv
+TELEGRAM_BOT_TOKEN=<BotFather bergan token>
+TELEGRAM_ADMIN_CHAT_ID=
+SITE_URL=https://xonsaroy.uz
+```
+
+`SITE_URL` ni saytingizning haqiqiy HTTPS manziliga moslang. Botdagi sayt va
+profil tugmalari shu manzilga yo'naltiriladi. `TELEGRAM_ADMIN_CHAT_ID` ni botni
+ishga tushirgach `/profile` dan oling va shu yerga yozing. Bu ID bot orqali va
+saytdan kelgan arizalarni admin'ga yuboradi.
 
 ## 3. Django Web app va WSGI
 
@@ -110,22 +124,47 @@ almashtiring va web app'ni reload qiling:
 `media/` mapping'ini faqat media fayllar ishlatilsa qo'shing. Kod yoki static
 fayllar o'zgarganda `collectstatic` ni qayta ishlating.
 
-## 5. Telegram bot (ixtiyoriy)
+## 5. Telegram botni ishga tushirish
 
-Bot veb-saytning WSGI ichida avtomatik ishlamaydi. PythonAnywhere'ning **Tasks**
-sahifasida Always-on task mavjud bo'lgan tarifda quyidagi komandani alohida
-vazifa sifatida qo'shing:
+Bot saytning WSGI jarayonida ishlamaydi va Web sahifasini reload qilish uni
+ishga tushirmaydi. U PythonAnywhere'da alohida **Always-on task** bo'lib
+ishlashi kerak. Bu imkoniyat hisob tarifiga bog'liq.
+
+1. BotFather'da bot yarating yoki mavjud bot tokenini oling. Tokenni
+   `~/demo_day/.env` ichidagi `TELEGRAM_BOT_TOKEN` ga yozing. Tokenni buyruq
+   satriga yozmang va skrinshotda ko'rsatmang.
+2. `SITE_URL` ni saytingizning haqiqiy HTTPS manziliga moslang. Hozircha
+   `TELEGRAM_ADMIN_CHAT_ID` ni bo'sh qoldiring; admin ID ni bot ishlagach olasiz.
+3. **Consoles → Bash** ochib, sozlamalarni tekshiring. Username va virtual muhit
+   nomini o'zingiznikiga moslang:
+
+```bash
+/home/yourusername/.virtualenvs/xonsaroy-venv/bin/python /home/yourusername/demo_day/manage.py check
+/home/yourusername/.virtualenvs/xonsaroy-venv/bin/python /home/yourusername/demo_day/manage.py runbot --check
+```
+
+4. `runbot --check` bot username'ini ko'rsatib, token va webhook holatini
+   tekshiradi; u botni doimiy ishga tushirmaydi. Token noto'g'ri bo'lsa yoki
+   webhook sozlangan bo'lsa, terminaldagi xabarni tuzating. Ushbu loyiha polling
+   ishlatgani uchun webhook o'chirilgan bo'lishi kerak.
+5. PythonAnywhere **Tasks → Always-on tasks** ro'yxatida **Add a new task**
+   tugmasini bosib, ushbu buyruqni kiriting (username va yo'llarni moslang):
 
 ```bash
 /home/yourusername/.virtualenvs/xonsaroy-venv/bin/python /home/yourusername/demo_day/manage.py runbot
 ```
 
-`.env` da `TELEGRAM_BOT_TOKEN` va kerak bo'lsa `TELEGRAM_ADMIN_CHAT_ID` to'ldirilgan
-bo'lishi kerak. Always-on task pullik tarifda mavjud; bepul tarifda bot'ni doimiy
-ishlatish kafolatlanmaydi.
+   Faqat bitta Always-on task yarating: bir bot tokeni bilan parallel polling
+   qiladigan ikki jarayon Telegram'da to'qnashuv keltirib chiqaradi.
+6. Task holati **Running** bo'lgach, Telegram'da botga `/start`, keyin
+   `/profile` yuboring. Bot ko'rsatgan **Telegram ID** ni nusxalab,
+   `~/demo_day/.env` dagi `TELEGRAM_ADMIN_CHAT_ID` ga yozing, so'ng Always-on
+   task'ni **Restart** qiling. Admin bildirishnomalari kelishi uchun admin
+   avval botga `/start` yuborgan bo'lishi shart.
+7. Botga `/projects` va `/profile` yuborib, saytdan test arizasi jo'nating.
+   Ariza admin akkauntiga Telegram xabari bo'lib kelishi kerak. Muammo bo'lsa
+   PythonAnywhere'dagi task logini va **Web → Error log** ni ko'ring.
 
-## 6. Tekshirish
-
-Web app'ni reload qiling va PythonAnywhere'dagi **Error log** ni tekshiring. Sayt
-ochilmasa, odatda `SECRET_KEY`/`ALLOWED_HOSTS`, virtual muhit yo'li yoki WSGI
-`project_path` ni to'g'rilash kerak bo'ladi.
+Kod yangilanganda Bash console'da `git pull` qiling, yuqoridagi `runbot --check`
+tekshiruvini takrorlang va Always-on task'ni **Restart** qiling. Web sahifasini
+alohida **Web → Reload** tugmasi bilan qayta yuklash kerak.

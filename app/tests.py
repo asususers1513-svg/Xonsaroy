@@ -126,25 +126,32 @@ class RequirementsModelAndFilterTests(TestCase):
         self.assertTrue(self.client.login(username='testuser', password='NewPass123!'))
 
     @patch('app.views.requests.post')
-    def test_contact_form_sends_message_to_telegram(self, mock_post):
+    def test_contact_form_notifies_admin_with_escaped_user_input(self, mock_post):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {'ok': True}
 
-        request = RequestFactory().post(
-            reverse('contact_submit'),
-            {
-                'name': 'Ali',
-                'phone': '+998901234567',
-                'message': 'Loyihada taklifim bor',
-                'telegram_id': '123456789',
-                'telegram_username': 'alibek'
-            }
-        )
-        response = __import__('app.views', fromlist=['contact_submit']).contact_submit(request)
+        with patch.dict('os.environ', {
+            'TELEGRAM_BOT_TOKEN': 'test-token',
+            'TELEGRAM_ADMIN_CHAT_ID': '987654321',
+        }):
+            request = RequestFactory().post(
+                reverse('contact_submit'),
+                {
+                    'name': '<b>Ali</b>',
+                    'phone': '+998901234567',
+                    'message': '<i>Loyihada taklifim bor</i>',
+                    'telegram_id': '123456789',
+                    'telegram_username': 'alibek'
+                }
+            )
+            response = __import__('app.views', fromlist=['contact_submit']).contact_submit(request)
 
         self.assertEqual(response.status_code, 200)
         body = json.loads(response.content)
         self.assertTrue(body['success'])
         mock_post.assert_called_once()
-
+        payload = mock_post.call_args.kwargs['data']
+        self.assertEqual(payload['chat_id'], '987654321')
+        self.assertIn('&lt;b&gt;Ali&lt;/b&gt;', payload['text'])
+        self.assertIn('&lt;i&gt;Loyihada taklifim bor&lt;/i&gt;', payload['text'])
 

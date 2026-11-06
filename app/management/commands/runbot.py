@@ -5,7 +5,7 @@ import json
 import logging
 import requests
 import html
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from app.models import Home, Apartment, SalesOffice, Material, Client, User, BotUser, Lead
 
@@ -301,9 +301,9 @@ class TelegramBot:
             url = f"{self.api_url}/{method}"
             resp = requests.post(url, data=data, files=files, timeout=35)
             return resp.json()
-        except Exception as e:
-            logger.error(f"Telegram API error ({method}): {e}")
-            return {'ok': False, 'error': str(e)}
+        except Exception:
+            logger.error("Telegram API so‘rovi bajarilmadi (%s).", method)
+            return {'ok': False, 'description': 'Telegram API request failed.'}
 
     def send_message(self, chat_id, text, reply_markup=None, parse_mode='HTML'):
         data = {
@@ -652,7 +652,7 @@ class TelegramBot:
             btn_title = f"{p_name}: {a.rooms}-xona, {a.area} m² — {price_str} so‘m"
             apt_buttons.append([{'text': btn_title, 'callback_data': f"apt_detail_{a.id}"}])
 
-        inline_kb = {'inline_keyboard': [filter_row, all_row] + apt_buttons}
+        inline_kb = {'inline_keyboard': [filter_row] + apt_buttons}
         self.send_message(chat_id, header, reply_markup=inline_kb)
 
     def handle_apartment_detail(self, chat_id, apt_id):
@@ -958,7 +958,7 @@ class TelegramBot:
             site_status=site_status
         )
 
-        site_url = "http://127.0.0.1:8000/profile/"
+        site_url = f"{settings.SITE_URL}/profile/"
         kb = {
             'inline_keyboard': [
                 [{'text': '🌐 Saytdagi profilni ochish' if lang == 'uz' else '🌐 Профиль на сайте', 'url': site_url}],
@@ -1096,8 +1096,14 @@ class TelegramBot:
                     params={'offset': offset, 'timeout': 25},
                     timeout=35
                 )
+                resp.raise_for_status()
                 data = resp.json()
                 if not data.get('ok'):
+                    if data.get('error_code') in (401, 409):
+                        raise CommandError(
+                            f"Telegram getUpdates xatosi: {data.get('description', 'token yoki polling muammosi')}"
+                        )
+                    logger.error("Telegram getUpdates xatosi: %s", data.get('description', 'noma’lum xato'))
                     time.sleep(2)
                     continue
 
@@ -1156,7 +1162,7 @@ class TelegramBot:
                             self.handle_profile(chat_id, user)
 
                         elif text in ('🌐 Veb-saytga o‘tish', '🌐 Перейти на сайт', '🌐 Visit Website', '/website'):
-                            site_url = "http://127.0.0.1:8000/"
+                            site_url = f"{settings.SITE_URL}/"
                             kb = {'inline_keyboard': [[{'text': '🌐 Xon Saroy veb-saytini ochish', 'url': site_url}]]}
                             self.send_message(chat_id, "Xon Saroy rasmiy veb-saytiga tashrif buyuring:", reply_markup=kb)
 
@@ -1312,8 +1318,13 @@ class TelegramBot:
                             self.user_states[chat_id] = {'state': 'admin_broadcast_input'}
                             self.send_message(chat_id, "Barcha foydalanuvchilarga yubormoqchi bo‘lgan xabaringizni yozib yuboring:")
 
+            except CommandError:
+                raise
+            except requests.RequestException as err:
+                logger.error("Telegram polling so‘rovi bajarilmadi (%s).", type(err).__name__)
+                time.sleep(3)
             except Exception as err:
-                logger.error(f"Polling loop exception: {err}")
+                logger.error("Polling loop exception (%s).", type(err).__name__)
                 time.sleep(3)
 
 
@@ -1323,14 +1334,48 @@ class TelegramBot:
 class Command(BaseCommand):
     help = 'Xon Saroy Telegram Botini ishga tushirish'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--check',
+            action='store_true',
+            help='Token va polling sozlamalarini tekshiradi, botni ishga tushirmaydi.',
+        )
+
     def handle(self, *args, **options):
         bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
         admin_chat_id = os.getenv('TELEGRAM_ADMIN_CHAT_ID', '').strip()
 
         if not bot_token:
-            self.stderr.write(self.style.ERROR(".env faylida TELEGRAM_BOT_TOKEN topilmadi!"))
+            raise CommandError(".env faylida TELEGRAM_BOT_TOKEN topilmadi.")
+
+        bot = TelegramBot(token=bot_token, admin_chat_id=admin_chat_id)
+        bot_info = bot.call_api('getMe')
+        if not bot_info.get('ok'):
+            raise CommandError(
+                f"Telegram token tekshiruvi muvaffaqiyatsiz: {bot_info.get('description', 'API javob bermadi')}"
+            )
+
+        webhook_info = bot.call_api('getWebhookInfo')
+        if not webhook_info.get('ok'):
+            raise CommandError(
+                f"Telegram webhook holatini tekshirib bo‘lmadi: {webhook_info.get('description', 'API javob bermadi')}"
+            )
+        webhook_url = webhook_info.get('result', {}).get('url', '')
+        if webhook_url:
+            raise CommandError(
+                "Botda webhook sozlangan. Bu loyiha polling ishlatadi; webhookni o‘chirib, "
+                "qayta `python manage.py runbot --check` buyrug‘ini bajaring."
+            )
+
+        username = bot_info.get('result', {}).get('username', 'noma’lum')
+        status = f"Bot @{username} tokeni va polling sozlamalari to‘g‘ri."
+        if admin_chat_id:
+            status += " Admin xabarlari yoqilgan."
+        else:
+            status += " TELEGRAM_ADMIN_CHAT_ID kiritilmagan; admin xabarlari yuborilmaydi."
+        if options['check']:
+            self.stdout.write(self.style.SUCCESS(status))
             return
 
-        self.stdout.write(self.style.SUCCESS(f"Xon Saroy Telegram Bot ishga tushmoqda... (Admin ID: {admin_chat_id})"))
-        bot = TelegramBot(token=bot_token, admin_chat_id=admin_chat_id)
+        self.stdout.write(self.style.SUCCESS(f"{status} Bot ishga tushmoqda..."))
         bot.run_polling()
