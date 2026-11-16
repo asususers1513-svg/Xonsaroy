@@ -3823,6 +3823,10 @@ body {
     transition: transform 0.3s ease;
 }
 
+.detail-modal-media img[hidden] {
+    display: none;
+}
+
 .detail-modal-media img:hover {
     transform: scale(1.02);
 }
@@ -4102,4 +4106,239 @@ body {
     .detail-modal-cta-bar {
         flex-direction: column;
     }
-}
+}
+
+.apartment-inventory {
+    max-width: 1120px;
+    margin: 0 auto 34px;
+    padding: 22px;
+    border: 1px solid var(--line);
+    background: var(--white);
+}
+
+.inventory-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.inventory-heading h3 {
+    margin: 0;
+    font-size: 19px;
+}
+
+.inventory-heading p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.inventory-heading label {
+    display: grid;
+    gap: 6px;
+    min-width: 220px;
+    color: #55545a;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.inventory-heading select {
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+}
+
+.inventory-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0 14px;
+    color: #55545a;
+    font-size: 12px;
+}
+
+.inventory-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.inventory-legend i {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+}
+
+.inventory-legend .is-available {
+    background: #73ad83;
+}
+
+.inventory-legend .is-reserved {
+    background: #e6b45e;
+}
+
+.inventory-legend .is-sold {
+    background: #c5c6ca;
+}
+
+.inventory-house {
+    overflow: hidden;
+    padding: 22px 18px 0;
+    border: 1px solid #d9d7d4;
+    border-bottom: 8px solid #a8a6a2;
+    background: linear-gradient(90deg, #f3f2f0 0 12px, #fff 12px calc(100% - 12px), #f3f2f0 calc(100% - 12px));
+}
+
+.inventory-house-shape {
+    width: min(100%, 900px);
+    margin: 0 auto;
+    border-top: 6px solid #817e78;
+}
+
+.inventory-floor {
+    min-height: 82px;
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr);
+    align-items: center;
+    border: 1px solid #d8d6d2;
+    border-top: 0;
+    background: #f7f6f3;
+}
+
+.inventory-floor-label {
+    padding: 10px;
+    color: #55545a;
+    font-size: 12px;
+    text-align: center;
+}
+
+.inventory-units {
+    min-width: 0;
+    min-height: 80px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 9px;
+    border-left: 1px solid #d8d6d2;
+    background: repeating-linear-gradient(90deg, #fff 0 90px, #f1f0ed 90px 92px);
+}
+
+.inventory-unit {
+    position: relative;
+    width: 42px;
+    height: 50px;
+    padding: 9px 0 0;
+    border: 1px solid #54785e;
+    border-radius: 4px 4px 1px 1px;
+    background: #e0f0e2;
+    color: #315d3b;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.inventory-unit:hover:not(:disabled),
+.inventory-unit:focus-visible {
+    z-index: 1;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(23, 23, 25, .16);
+}
+
+.inventory-unit-roof {
+    position: absolute;
+    top: 0;
+    left: 3px;
+    width: 34px;
+    height: 10px;
+    border-top: 2px solid currentColor;
+    transform: skewY(-24deg);
+}
+
+.inventory-unit-number {
+    display: block;
+    font-size: 21px;
+    line-height: 28px;
+}
+
+.inventory-unit-label {
+    position: absolute;
+    right: 2px;
+    bottom: 1px;
+    left: 2px;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inventory-unit.is-reserved {
+    border-color: #b9852d;
+    background: #fff1d2;
+    color: #855c18;
+}
+
+.inventory-unit.is-sold {
+    border-color: #aaa9a5;
+    background: #e6e5e2;
+    color: #777672;
+}
+
+.inventory-unit:disabled {
+    cursor: not-allowed;
+    opacity: .8;
+}
+
+.inventory-empty {
+    margin: 12px 0 0;
+    color: var(--muted);
+    text-align: center;
+}
+
+.apartment-request-form[hidden],
+#apartment-reservation-code-form[hidden] {
+    display: none;
+}
+
+.apartment-request-form button:disabled {
+    cursor: wait;
+    opacity: .7;
+}
+
+.apartment-request-feedback {
+    min-height: 20px;
+    margin: 10px 0 0;
+    color: #315d3b;
+    font-size: 13px;
+}
+
+.apartment-request-feedback.is-error {
+    color: #b42318;
+}
+
+.apartment-availability-badge {
+    display: inline-flex;
+    align-items: center;
+    margin: 8px 0 0;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #e0f0e2;
+    color: #315d3b;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.apartment-availability-badge.is-reserved {
+    background: #fff1d2;
+    color: #855c18;
+}
+
+.apartment-availability-badge.is-sold {
+    background: #e6e5e2;
+    color: #777672;
+}

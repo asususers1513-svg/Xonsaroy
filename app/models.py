@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -84,7 +85,13 @@ class Home(models.Model):
 
 
 class Apartment(models.Model):
+	class Availability(models.TextChoices):
+		AVAILABLE = 'available', 'Bo‘sh'
+		RESERVED = 'reserved', 'Bron qilingan'
+		SOLD = 'sold', 'Sotilgan'
+
 	project = models.ForeignKey(Home, on_delete=models.SET_NULL, related_name='apartments', null=True, blank=True)
+	unit_number = models.CharField(max_length=20, blank=True, verbose_name='Xonadon raqami')
 	rooms = models.PositiveSmallIntegerField(default=1, verbose_name='Xonalar soni')
 	floor = models.PositiveSmallIntegerField(verbose_name='Qavat')
 	area = models.DecimalField(max_digits=6, decimal_places=1, verbose_name='Maydon (m²)')
@@ -93,6 +100,12 @@ class Apartment(models.Model):
 	image_url = models.URLField(blank=True, editable=False)
 	description = models.TextField(blank=True, verbose_name='Tavsif')
 	is_active = models.BooleanField(default=True, verbose_name='Faol')
+	availability = models.CharField(
+		max_length=12,
+		choices=Availability.choices,
+		default=Availability.AVAILABLE,
+		verbose_name='Sotuv holati',
+	)
 	sort_order = models.PositiveSmallIntegerField(default=0, verbose_name='Tartib raqami')
 
 	class Meta:
@@ -100,6 +113,38 @@ class Apartment(models.Model):
 
 	def __str__(self):
 		return f'{self.project} — {self.rooms} xonali, {self.area} m², {self.price:,.0f} so\'m'
+
+
+class ApartmentReservation(models.Model):
+	class Status(models.TextChoices):
+		PENDING = 'pending', 'Tasdiqlash kutilmoqda'
+		CONFIRMED = 'confirmed', 'Tasdiqlangan'
+		EXPIRED = 'expired', 'Muddati tugagan'
+
+	public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+	apartment = models.ForeignKey(
+		Apartment,
+		on_delete=models.PROTECT,
+		related_name='reservations',
+		verbose_name='Xonadon',
+	)
+	name = models.CharField(max_length=120, verbose_name='Ism')
+	email = models.EmailField(verbose_name='Elektron pochta')
+	phone = models.CharField(max_length=30, verbose_name='Telefon')
+	code_hash = models.CharField(max_length=128, verbose_name='Tasdiqlash kodi')
+	status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+	attempts = models.PositiveSmallIntegerField(default=0, verbose_name='Kod kiritish urinishlari')
+	created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqt')
+	expires_at = models.DateTimeField(verbose_name='Amal qilish muddati')
+	confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name='Tasdiqlangan vaqt')
+
+	class Meta:
+		ordering = ('-created_at',)
+		verbose_name = 'Xonadon bron qilish'
+		verbose_name_plural = 'Xonadon bronlari'
+
+	def __str__(self):
+		return f'{self.apartment} — {self.name} ({self.get_status_display()})'
 
 
 class ApartmentImage(models.Model):

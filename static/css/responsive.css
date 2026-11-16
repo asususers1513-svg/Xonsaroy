@@ -1,0 +1,544 @@
+html {
+    overflow-x: clip;
+}
+
+body {
+    min-width: 320px;
+    overflow-x: hidden;
+}
+
+img,
+video,
+iframe {
+    max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+    .site-header {
+        padding-right: 24px;
+        padding-left: 24px;
+        gap: 12px;
+    }
+
+    .main-nav {
+        gap: 12px;
+    }
+
+    .hero-showcase-inner,
+    .about-section {
+        width: calc(100% - 48px);
+    }
+}
+
+@media (max-width: 760px) {
+    .site-header {
+        min-height: 0;
+        padding: 8px 16px 4px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 6px 10px;
+    }
+
+    .brand {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .brand img {
+        width: 88px;
+        height: 48px;
+    }
+
+    .language-switch {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 38px;
+        min-height: 36px;
+        padding: 0 9px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .phone-icon {
+        grid-column: 3;
+        grid-row: 1;
+        width: 38px;
+        height: 38px;
+        margin: 0;
+    }
+
+    .header-contact {
+        display: none !important;
+    }
+
+    .apartment-shortcut {
+        grid-column: 1;
+        grid-row: 2;
+        min-width: 0;
+        min-height: 38px;
+        padding: 0 10px;
+        font-size: 11px;
+    }
+
+    .account-actions {
+        grid-column: 2 / 4;
+        grid-row: 2;
+        min-width: 0;
+        justify-content: flex-end;
+        gap: 4px !important;
+        white-space: normal;
+    }
+
+    .account-actions > div {
+        justify-content: flex-end;
+        gap: 4px !important;
+    }
+
+    .account-name,
+    .account-actions > div > img,
+    .account-actions > div > div {
+        display: none !important;
+    }
+
+    .account-link {
+        padding: 7px 8px;
+        font-size: 10px;
+        text-align: center;
+    }
+
+    .account-link-primary {
+        display: inline-flex !important;
+    }
+
+    .main-nav {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        min-width: 0;
+        width: 100%;
+        padding: 5px 0 8px;
+        display: flex;
+        flex: initial;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px 16px;
+        overflow: visible;
+        font-size: 11px;
+        scrollbar-width: none;
+    }
+
+    .main-nav a {
+        white-space: nowrap;
+    }
+
+    .hero-showcase {
+        padding: 28px 0 44px;
+    }
+
+    .hero-showcase-inner,
+    .about-section {
+        width: calc(100% - 36px);
+    }
+
+    .hero-layout {
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+    }
+
+    .hero-stack {
+        min-height: 0;
+    }
+
+    .hero-slide {
+        inset: auto;
+    }
+
+    .hero-slide:not(.is-active) {
+        position: absolute;
+        inset: 0;
+    }
+
+    .hero-slide.is-active {
+        position: relative;
+    }
+
+    .hero-title {
+        font-size: clamp(30px, 8vw, 46px);
+        overflow-wrap: anywhere;
+    }
+
+    .hero-description {
+        font-size: 14px;
+    }
+
+    .hero-media-frame {
+        aspect-ratio: 1.65;
+    }
+
+    .hero-pagination {
+        margin-top: 20px;
+    }
+
+    .about-section {
+        padding: 44px 0;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+
+    .projects-section {
+        width: 100%;
+        padding: 38px 18px;
+    }
+
+    .project-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .apartment-section {
+        padding: 40px 16px;
+    }
+
+    .apartment-toolbar {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .apartment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .apartment-card {
+        min-width: 0;
+        max-width: none;
+        padding: 7px;
+    }
+
+    .apartment-card > img {
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    .apartment-price {
+        overflow-wrap: anywhere;
+        font-size: clamp(10px, 3.2vw, 14px) !important;
+    }
+
+    .materials-section,
+    .clients-section,
+    .offices-section {
+        padding: 42px 18px;
+    }
+
+    .wide-section-heading {
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+
+    .wide-section-heading h2 {
+        font-size: clamp(28px, 7vw, 36px);
+    }
+
+    .office-browser {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .office-list {
+        max-height: 180px;
+    }
+
+    .office-map {
+        min-height: 240px;
+    }
+
+    .contact-section {
+        padding: 42px 18px;
+    }
+
+    .contact-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .contact-form .contact-button {
+        grid-column: 1;
+    }
+
+    .footer-main {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 14px;
+        padding-bottom: 20px;
+    }
+
+    .footer-main > div > strong,
+    .footer-main > div > a {
+        overflow-wrap: anywhere;
+    }
+
+    .footer-legal {
+        min-height: 42px;
+        margin-right: -6%;
+        margin-left: -6%;
+        padding: 8px 6%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 8px 16px;
+    }
+
+    .public-page {
+        width: calc(100% - 36px);
+        padding: 28px 0 40px;
+    }
+
+    .public-page-heading h1,
+    .public-offices h2 {
+        font-size: clamp(24px, 6vw, 30px);
+    }
+
+    .public-contact-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .public-footer {
+        padding: 24px 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 20px 14px;
+    }
+
+    .public-footer > span {
+        grid-column: 1 / -1;
+        line-height: 1.5;
+    }
+
+    .public-dialog-backdrop {
+        padding: 12px;
+    }
+
+    .public-dialog {
+        max-height: min(90vh, 760px);
+        max-height: min(90dvh, 760px);
+        padding: 26px 20px;
+        overflow-y: auto;
+    }
+
+    .detail-modal-backdrop,
+    .contact-modal-backdrop {
+        padding: 12px;
+    }
+
+    .detail-modal,
+    .contact-modal {
+        width: min(100%, 720px);
+        max-width: calc(100vw - 24px);
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 460px) {
+    .site-header {
+        padding-right: 12px;
+        padding-left: 12px;
+        gap: 5px 7px;
+    }
+
+    .brand img {
+        width: 80px;
+    }
+
+    .apartment-shortcut {
+        max-width: 100%;
+        padding: 0 8px;
+        font-size: 10px;
+    }
+
+    .main-nav {
+        gap: 6px 12px;
+        font-size: 10px;
+    }
+
+    .hero-showcase-inner,
+    .about-section {
+        width: calc(100% - 28px);
+    }
+
+    .hero-stack {
+        min-height: 0;
+    }
+
+    .hero-title {
+        margin-bottom: 12px;
+    }
+
+    .hero-media-frame {
+        aspect-ratio: 1.4;
+    }
+
+    .apartment-section {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .apartment-toolbar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .toolbar-select,
+    .toolbar-range,
+    .toolbar-rooms {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .toolbar-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+
+    .apartment-data {
+        min-height: 68px;
+        font-size: 11px;
+    }
+
+    .apartment-data span {
+        font-size: 10px;
+    }
+
+    .public-page {
+        width: calc(100% - 28px);
+    }
+
+    .public-contact-grid article,
+    .public-partner-card > div {
+        padding: 16px;
+    }
+
+    .public-dialog {
+        padding: 24px 16px;
+    }
+
+    .footer-main {
+        gap: 16px 10px;
+    }
+
+    .footer-legal {
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 360px) {
+    .account-link {
+        padding: 6px;
+        font-size: 9px;
+    }
+
+    .main-nav {
+        gap: 6px 9px;
+        font-size: 9px;
+    }
+
+    .apartment-grid {
+        gap: 7px;
+    }
+
+    .apartment-card {
+        padding: 5px;
+    }
+
+    .footer-main {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    body > div.max-w-md {
+        padding: 24px 18px !important;
+        border-radius: 20px !important;
+    }
+
+    body > div.max-w-md h1 {
+        font-size: 1.4rem;
+        line-height: 1.25;
+    }
+
+    body > div.max-w-md .otp-cell {
+        width: clamp(32px, 10.5vw, 40px);
+        height: 44px;
+        font-size: 20px;
+    }
+
+    #otp-container {
+        gap: clamp(4px, 1.8vw, 8px);
+    }
+
+    .auth-body {
+        padding: 24px 12px;
+    }
+
+    .auth-panel {
+        padding: 26px 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .apartment-inventory {
+        margin-bottom: 24px;
+        padding: 16px 12px;
+    }
+
+    .inventory-heading {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .inventory-heading label {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .inventory-house {
+        padding: 14px 8px 0;
+    }
+
+    .inventory-floor {
+        min-height: 72px;
+        grid-template-columns: 66px minmax(0, 1fr);
+    }
+
+    .inventory-units {
+        gap: 6px;
+        padding: 8px 5px;
+    }
+
+    .inventory-unit {
+        width: 42px;
+        height: 58px;
+    }
+
+    .inventory-unit-roof {
+        left: 2px;
+        width: 29px;
+    }
+
+    .detail-modal--rich {
+        width: min(100%, 720px) !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 24px) !important;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}

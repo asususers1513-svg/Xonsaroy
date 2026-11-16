@@ -6,7 +6,8 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 from app.views import (
     home, login_view, register_view, logout_view, profile_view, contact_submit,
-    contacts_view, partners_view,
+    contacts_view, partners_view, apartment_reservation_request_view,
+    apartment_reservation_confirm_view,
     password_reset_request_view, password_reset_confirm_view, password_reset_resend_view,
     apartment_detail_api,
 )
@@ -20,6 +21,8 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('profile/', profile_view, name='profile'),
     path('contact/submit/', contact_submit, name='contact_submit'),
+    path('apartments/reserve/', apartment_reservation_request_view, name='apartment_reservation_request'),
+    path('apartments/reserve/verify/', apartment_reservation_confirm_view, name='apartment_reservation_confirm'),
     path('password-reset/', password_reset_request_view, name='password_reset_request'),
     path('password-reset/verify/', password_reset_confirm_view, name='password_reset_confirm'),
     path('password-reset/resend/', password_reset_resend_view, name='password_reset_resend'),

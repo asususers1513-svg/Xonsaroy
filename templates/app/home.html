@@ -8,6 +8,7 @@
     <title>Xon Saroy — turar joy majmualari</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/home.css' %}?v=9">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 </head>
 <body>
     <header class="site-header">
@@ -272,6 +273,8 @@
                 detailM2Price: '1 m² narxi',
                 detailStatus: 'Holati',
                 statusAvailable: 'Sotuvda mavjud',
+                statusReserved: 'Bron qilingan',
+                statusSold: 'Sotilgan',
                 specsTitle: 'Asosiy ma’lumotlar:',
                 installmentTitle: '0% foizsiz muddatli to‘lov imkoniyati',
                 installmentSubtitle: 'Xon Saroy majmualarida qulay to‘lov rejalari',
@@ -354,6 +357,8 @@
                 detailM2Price: 'Цена за 1 м²',
                 detailStatus: 'Статус',
                 statusAvailable: 'В продаже',
+                statusReserved: 'Забронирована',
+                statusSold: 'Продана',
                 specsTitle: 'Основные параметры:',
                 installmentTitle: 'Беспроцентная рассрочка 0%',
                 installmentSubtitle: 'Удобные планы выплат в комплексах Xon Saroy',
@@ -436,6 +441,8 @@
                 detailM2Price: 'Price per 1 m²',
                 detailStatus: 'Status',
                 statusAvailable: 'Available for Sale',
+                statusReserved: 'Reserved',
+                statusSold: 'Sold',
                 specsTitle: 'Key Specifications:',
                 installmentTitle: '0% Interest-free Installment Plan',
                 installmentSubtitle: 'Convenient payment options across Xon Saroy complexes',
@@ -637,13 +644,38 @@
             const lang = localStorage.getItem(storageKey) || initialLang;
             const dict = translations[lang] || translations.uz;
             const apartmentName = `${title} · ${formatApartmentUnit(rooms, lang)}`;
+            const availability = card.dataset.availability || 'available';
+            const availabilityLabels = {
+                available: dict.statusAvailable,
+                reserved: dict.statusReserved,
+                sold: dict.statusSold,
+            };
 
             if (detailRooms) detailRooms.textContent = formatRoomCount(rooms, lang);
             if (detailFloor) detailFloor.textContent = `${floor}${lang === 'uz' ? '-qavat' : lang === 'ru' ? '-этаж' : '-floor'}`;
             if (detailArea) detailArea.textContent = `${area} m²`;
             if (detailPrice) detailPrice.textContent = `${price} ${lang === 'ru' ? 'сум' : lang === 'en' ? 'sum' : 'so\'m'}`;
+            document.getElementById('detail-m2-price').textContent = `${card.dataset.m2Price || '0'} ${lang === 'ru' ? 'сум/м²' : lang === 'en' ? 'sum/m²' : 'so‘m/m²'}`;
+            document.getElementById('detail-down-payment').textContent = `${card.dataset.downPayment || '0'} so‘m`;
+            document.getElementById('detail-monthly-payment').textContent = `${card.dataset.monthlyPayment || '0'} so‘m`;
             document.getElementById('detail-modal-title').textContent = apartmentName;
-            document.getElementById('apartment-request-message').value = `${apartmentName}; ${dict.detailFloor}: ${floor}; ${dict.detailArea}: ${area} m²; ${dict.detailPrice}: ${price}`;
+            document.getElementById('detail-modal-subtitle').textContent = `${card.dataset.projectName || title} · ${card.dataset.status || ''}`;
+            document.getElementById('detail-category-badge').textContent = card.dataset.category || 'Turar joy majmuasi';
+            document.getElementById('detail-status-badge').textContent = availabilityLabels[availability] || dict.statusAvailable;
+            document.getElementById('detail-description').textContent = card.dataset.description || 'Zamonaviy arxitektura va qulay infratuzilma.';
+            const image = document.getElementById('detail-modal-img');
+            const imageUrl = card.dataset.image || '';
+            image.hidden = !imageUrl;
+            if (imageUrl) image.src = imageUrl;
+            else image.removeAttribute('src');
+            document.getElementById('detail-modal-placeholder').hidden = Boolean(imageUrl);
+            document.getElementById('apartment-request-id').value = card.dataset.id || '';
+            document.getElementById('detail-status-val').textContent = availabilityLabels[availability] || dict.statusAvailable;
+            document.getElementById('apartment-reservation-request-form').hidden = availability !== 'available';
+            document.getElementById('apartment-reservation-code-form').hidden = true;
+            document.getElementById('apartment-reservation-feedback').textContent = '';
+            document.getElementById('apartment-reservation-request-form').reset();
+            document.getElementById('apartment-request-id').value = card.dataset.id || '';
             detailModal.hidden = false;
         };
 
@@ -655,6 +687,93 @@
                 openDetailModal(card);
             }
         });
+
+        const inventoryDataElement = document.getElementById('apartment-floorplan-data');
+        const inventorySelect = document.getElementById('inventory-project-select');
+        const inventoryContainer = document.getElementById('apartment-inventory');
+        const inventoryEmpty = document.getElementById('inventory-empty');
+        const inventoryApartments = inventoryDataElement ? JSON.parse(inventoryDataElement.textContent) : [];
+
+        const createInventoryApartmentCard = (apartment) => {
+            const card = document.createElement('article');
+            card.className = 'apartment-card';
+            const price = Number(apartment.price);
+            const area = Number(apartment.area);
+            const values = {
+                id: apartment.id,
+                unitNumber: apartment.unit_number,
+                rooms: apartment.rooms,
+                floor: apartment.floor,
+                area: apartment.area,
+                price: Number.isFinite(price) ? price.toLocaleString('uz-UZ') : apartment.price,
+                title: apartment.project_name,
+                projectName: apartment.project_name,
+                category: apartment.category,
+                status: apartment.status,
+                description: apartment.description,
+                image: apartment.image,
+                availability: apartment.availability,
+                m2Price: area > 0 ? Math.round(price / area).toLocaleString('uz-UZ') : '0',
+                downPayment: Math.round(price * 0.15).toLocaleString('uz-UZ'),
+                monthlyPayment: Math.round(price * 0.85 / 36).toLocaleString('uz-UZ'),
+            };
+            Object.keys(values).forEach((key) => {
+                card.dataset[key] = values[key];
+            });
+            return card;
+        };
+
+        const renderApartmentInventory = () => {
+            if (!inventorySelect || !inventoryContainer) return;
+            const projectId = inventorySelect.value;
+            const apartments = inventoryApartments
+                .filter((apartment) => String(apartment.project_id) === projectId)
+                .sort((left, right) => right.floor - left.floor || left.id - right.id);
+            inventoryContainer.replaceChildren();
+            inventoryEmpty.hidden = apartments.length > 0;
+            if (!apartments.length) return;
+
+            const house = document.createElement('div');
+            house.className = 'inventory-house-shape';
+            const floors = new Map();
+            apartments.forEach((apartment) => {
+                if (!floors.has(apartment.floor)) floors.set(apartment.floor, []);
+                floors.get(apartment.floor).push(apartment);
+            });
+
+            floors.forEach((units, floor) => {
+                const row = document.createElement('div');
+                row.className = 'inventory-floor';
+                const floorLabel = document.createElement('strong');
+                floorLabel.className = 'inventory-floor-label';
+                floorLabel.textContent = `${floor}-qavat`;
+                row.appendChild(floorLabel);
+                const unitList = document.createElement('div');
+                unitList.className = 'inventory-units';
+                units.forEach((apartment) => {
+                    const unit = document.createElement('button');
+                    const availability = apartment.availability || 'available';
+                    unit.type = 'button';
+                    unit.className = `inventory-unit is-${availability}`;
+                    unit.disabled = availability !== 'available';
+                    unit.setAttribute('aria-label', `${floor}-qavat, ${apartment.rooms} xonali, ${availability}`);
+                    unit.title = `${floor}-qavat · ${apartment.rooms} xonali · ${availability}`;
+                    unit.innerHTML = '<span class="inventory-unit-roof" aria-hidden="true"></span><span class="inventory-unit-number" aria-hidden="true">⌂</span>';
+                    const unitLabel = document.createElement('small');
+                    unitLabel.className = 'inventory-unit-label';
+                    unitLabel.textContent = apartment.unit_number;
+                    unit.appendChild(unitLabel);
+                    unit.addEventListener('click', () => openDetailModal(createInventoryApartmentCard(apartment)));
+                    unitList.appendChild(unit);
+                });
+                row.appendChild(unitList);
+                house.appendChild(row);
+            });
+            inventoryContainer.appendChild(house);
+        };
+
+        if (inventorySelect) inventorySelect.addEventListener('change', renderApartmentInventory);
+        renderApartmentInventory();
 
         if (detailClose) {
             detailClose.addEventListener('click', () => {
@@ -732,6 +851,30 @@
             <h2 id="apartment-heading-title">Orzuyingizdagi xonadonni tanlang</h2>
             <span class="eyebrow" id="apartment-eyebrow">XON SAROY · XONADONLAR</span>
         </div>
+
+        <section class="apartment-inventory" aria-labelledby="inventory-title">
+            <div class="inventory-heading">
+                <div>
+                    <h3 id="inventory-title">Majmua va bo‘sh xonadonlar</h3>
+                    <p>Uy belgisini tanlab xonadon holati va narxini ko‘ring.</p>
+                </div>
+                <label for="inventory-project-select">Majmua
+                    <select id="inventory-project-select">
+                        {% for project in inventory_projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="inventory-legend" aria-label="Xonadon holatlari">
+                <span><i class="is-available"></i> Bo‘sh</span>
+                <span><i class="is-reserved"></i> Bron qilingan</span>
+                <span><i class="is-sold"></i> Sotilgan</span>
+            </div>
+            <div class="inventory-house" id="apartment-inventory" aria-live="polite"></div>
+            <p class="inventory-empty" id="inventory-empty" hidden>Ushbu majmuada hozircha xonadonlar yo‘q.</p>
+            {{ floorplan_apartments|json_script:"apartment-floorplan-data" }}
+        </section>
 
         <form method="get" action="#apartments" id="apartment-filter-form">
             {% if selected_status != 'all' %}
@@ -983,22 +1126,31 @@
             <div class="detail-modal-form-wrap">
                 <h4 data-i18n="requestFormTitle">Ushbu uy bo‘yicha ariza qoldirish:</h4>
                 <p data-i18n="requestDescription">Ismingiz va telefoningizni qoldiring, mutaxassisimiz tezda bog‘lanadi.</p>
-                <form class="apartment-request-form" id="apartment-request-form" method="post" action="{% url 'contact_submit' %}">
+                <form class="apartment-request-form" id="apartment-reservation-request-form" method="post" action="{% url 'apartment_reservation_request' %}">
                     {% csrf_token %}
-                    <input type="hidden" name="message" id="apartment-request-message">
+                    <input type="hidden" name="apartment_id" id="apartment-request-id">
                     <div class="form-row-2">
                         <div>
                             <label for="apartment-request-name" data-i18n="requestName">Ismingiz</label>
-                            <input id="apartment-request-name" name="name" placeholder="Ismingiz" data-i18n-placeholder="requestName" required>
+                            <input id="apartment-request-name" name="name" autocomplete="name" placeholder="Ismingiz" data-i18n-placeholder="requestName" required>
                         </div>
                         <div>
                             <label for="apartment-request-phone" data-i18n="requestPhone">Telefon raqamingiz</label>
-                            <input id="apartment-request-phone" name="phone" type="tel" placeholder="+998" required>
+                            <input id="apartment-request-phone" name="phone" type="tel" autocomplete="tel" placeholder="+998" required>
                         </div>
                     </div>
-                    <button type="submit" id="apartment-request-submit" data-i18n="requestSubmit">Ariza qoldirish</button>
-                    <p class="apartment-request-feedback" id="apartment-request-feedback" aria-live="polite"></p>
+                    <label for="apartment-request-email">Elektron pochta</label>
+                    <input id="apartment-request-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+                    <button type="submit" id="apartment-request-submit">Emailga tasdiqlash kodi yuborish</button>
                 </form>
+                <form class="apartment-request-form" id="apartment-reservation-code-form" method="post" action="{% url 'apartment_reservation_confirm' %}" hidden>
+                    {% csrf_token %}
+                    <input type="hidden" name="reservation_id" id="apartment-reservation-id">
+                    <label for="apartment-reservation-code">Emailga kelgan 6 xonali kod</label>
+                    <input id="apartment-reservation-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+                    <button type="submit">Bronni tasdiqlash</button>
+                </form>
+                <p class="apartment-request-feedback" id="apartment-reservation-feedback" aria-live="polite"></p>
             </div>
         </div>
     </div>
@@ -1160,27 +1312,56 @@
             }
         }));
 
-        const apartmentRequestForm = document.getElementById('apartment-request-form');
-        if (apartmentRequestForm) {
-            const feedback = document.getElementById('apartment-request-feedback');
-            apartmentRequestForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                feedback.textContent = '';
-                try {
-                    const response = await fetch(apartmentRequestForm.action, {
-                        method: 'POST',
-                        body: new FormData(apartmentRequestForm),
-                        headers: { 'X-CSRFToken': apartmentRequestForm.querySelector('[name=csrfmiddlewaretoken]').value },
-                    });
-                    const result = await response.json();
-                    const language = localStorage.getItem('xonsaroy-lang') || 'uz';
-                    feedback.textContent = result.success
-                        ? ({ uz: 'Arizangiz yuborildi.', ru: 'Заявка отправлена.', en: 'Your request has been sent.' }[language])
-                        : (result.message || 'Xatolik yuz berdi.');
-                    if (result.success) apartmentRequestForm.reset();
-                } catch {
-                    feedback.textContent = 'Xatolik yuz berdi. Qayta urinib ko‘ring.';
+        const reservationRequestForm = document.getElementById('apartment-reservation-request-form');
+        const reservationCodeForm = document.getElementById('apartment-reservation-code-form');
+        const reservationFeedback = document.getElementById('apartment-reservation-feedback');
+
+        const submitReservationForm = async (form) => {
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            reservationFeedback.textContent = 'Yuborilmoqda...';
+            reservationFeedback.classList.remove('is-error');
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                });
+                const result = await response.json();
+                reservationFeedback.textContent = result.message || 'Xatolik yuz berdi.';
+                reservationFeedback.classList.toggle('is-error', !result.success);
+                if (result.success && form === reservationRequestForm) {
+                    document.getElementById('apartment-reservation-id').value = result.reservation_id;
+                    reservationRequestForm.hidden = true;
+                    reservationCodeForm.hidden = false;
+                    document.getElementById('apartment-reservation-code').focus();
+                } else if (result.success && form === reservationCodeForm) {
+                    const apartment = inventoryApartments.find((item) => item.id === result.apartment_id);
+                    if (apartment) apartment.availability = 'reserved';
+                    const card = document.querySelector(`.apartment-card[data-id="${result.apartment_id}"]`);
+                    if (card) card.dataset.availability = 'reserved';
+                    renderApartmentInventory();
+                    document.getElementById('detail-status-val').textContent = 'Bron qilingan';
+                    reservationCodeForm.hidden = true;
                 }
+            } catch (error) {
+                reservationFeedback.textContent = 'Serverga ulanib bo‘lmadi. Qayta urinib ko‘ring.';
+                reservationFeedback.classList.add('is-error');
+            } finally {
+                submitButton.disabled = false;
+            }
+        };
+
+        if (reservationRequestForm) {
+            reservationRequestForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                submitReservationForm(reservationRequestForm);
+            });
+        }
+        if (reservationCodeForm) {
+            reservationCodeForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                submitReservationForm(reservationCodeForm);
             });
         }
 

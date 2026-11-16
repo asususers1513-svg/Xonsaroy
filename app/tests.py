@@ -1,14 +1,19 @@
 import json
+import re
+from datetime import timedelta
 from io import BytesIO
 from unittest.mock import patch
 
 from PIL import Image
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
-from app.models import User, Category, Home, Apartment
+from django.utils import timezone
+from app.models import User, Category, Home, Apartment, ApartmentReservation
 
 
+@override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
 class RequirementsModelAndFilterTests(TestCase):
     def setUp(self):
         # 1 & 2. Create Category and Custom User
@@ -75,8 +80,122 @@ class RequirementsModelAndFilterTests(TestCase):
     def test_apartment_details_include_request_form(self):
         response = self.client.get(reverse('home'))
 
-        self.assertContains(response, 'id="apartment-request-form"')
+        self.assertContains(response, 'id="apartment-reservation-request-form"')
         self.assertContains(response, 'data-title="Vatan"')
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_apartment_reservation_requires_email_code_and_marks_unit_reserved(self):
+        response = self.client.post(reverse('apartment_reservation_request'), {
+            'apartment_id': self.apt1.pk,
+            'name': 'Ali Valiyev',
+            'email': 'ali@example.com',
+            'phone': '+998901234567',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reservation_id = response.json()['reservation_id']
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.RESERVED)
+        self.assertEqual(len(mail.outbox), 1)
+        code = re.search(r'\b\d{6}\b', mail.outbox[0].body).group()
+
+        confirmation = self.client.post(reverse('apartment_reservation_confirm'), {
+            'reservation_id': reservation_id,
+            'code': code,
+        })
+
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertTrue(confirmation.json()['success'])
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.RESERVED)
+        self.assertEqual(
+            ApartmentReservation.objects.get(public_id=reservation_id).status,
+            ApartmentReservation.Status.CONFIRMED,
+        )
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_unavailable_apartment_cannot_be_reserved_and_bad_codes_release_after_five_tries(self):
+        self.apt1.availability = Apartment.Availability.SOLD
+        self.apt1.save(update_fields=['availability'])
+        request_data = {
+            'apartment_id': self.apt1.pk,
+            'name': 'Ali Valiyev',
+            'email': 'ali@example.com',
+            'phone': '+998901234567',
+        }
+        unavailable = self.client.post(reverse('apartment_reservation_request'), request_data)
+        self.assertEqual(unavailable.status_code, 409)
+
+        self.apt1.availability = Apartment.Availability.AVAILABLE
+        self.apt1.save(update_fields=['availability'])
+        requested = self.client.post(reverse('apartment_reservation_request'), request_data)
+        reservation_id = requested.json()['reservation_id']
+        for _ in range(5):
+            invalid = self.client.post(reverse('apartment_reservation_confirm'), {
+                'reservation_id': reservation_id,
+                'code': '000000',
+            })
+        self.assertEqual(invalid.status_code, 400)
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.AVAILABLE)
+        self.assertEqual(
+            ApartmentReservation.objects.get(public_id=reservation_id).status,
+            ApartmentReservation.Status.EXPIRED,
+        )
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_expired_reservation_code_releases_apartment(self):
+        requested = self.client.post(reverse('apartment_reservation_request'), {
+            'apartment_id': self.apt1.pk,
+            'name': 'Ali Valiyev',
+            'email': 'ali@example.com',
+            'phone': '+998901234567',
+        })
+        reservation_id = requested.json()['reservation_id']
+        reservation = ApartmentReservation.objects.get(public_id=reservation_id)
+        reservation.expires_at = timezone.now() - timedelta(seconds=1)
+        reservation.save(update_fields=['expires_at'])
+
+        response = self.client.post(reverse('apartment_reservation_confirm'), {
+            'reservation_id': reservation_id,
+            'code': re.search(r'\b\d{6}\b', mail.outbox[0].body).group(),
+        })
+
+        self.assertEqual(response.status_code, 410)
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.AVAILABLE)
+
+    @patch('app.views.send_apartment_reservation_code_email', return_value=0)
+    def test_email_delivery_failure_does_not_leave_apartment_reserved(self, mock_send_email):
+        response = self.client.post(reverse('apartment_reservation_request'), {
+            'apartment_id': self.apt1.pk,
+            'name': 'Ali Valiyev',
+            'email': 'ali@example.com',
+            'phone': '+998901234567',
+        })
+
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn('code', response.json())
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.AVAILABLE)
+        self.assertEqual(
+            ApartmentReservation.objects.get().status,
+            ApartmentReservation.Status.EXPIRED,
+        )
+        mock_send_email.assert_called_once()
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend')
+    def test_console_email_backend_is_not_reported_as_successful_delivery(self):
+        response = self.client.post(reverse('apartment_reservation_request'), {
+            'apartment_id': self.apt1.pk,
+            'name': 'Ali Valiyev',
+            'email': 'ali@example.com',
+            'phone': '+998901234567',
+        })
+
+        self.assertEqual(response.status_code, 503)
+        self.apt1.refresh_from_db()
+        self.assertEqual(self.apt1.availability, Apartment.Availability.AVAILABLE)
 
     def test_contacts_and_partners_are_separate_pages(self):
         contacts = self.client.get(reverse('contacts'))

@@ -181,3 +181,24 @@ class PasswordResetConfirmForm(forms.Form):
 				except forms.ValidationError as error:
 					self.add_error('new_password1', error)
 		return cleaned_data
+
+
+class ApartmentReservationRequestForm(forms.Form):
+	apartment_id = forms.IntegerField(min_value=1)
+	name = forms.CharField(max_length=120)
+	email = forms.EmailField(max_length=254)
+	phone = forms.CharField(max_length=30)
+
+	def clean_name(self):
+		return self.cleaned_data['name'].strip()
+
+	def clean_email(self):
+		return self.cleaned_data['email'].strip().lower()
+
+	def clean_phone(self):
+		return self.cleaned_data['phone'].strip()
+
+
+class ApartmentReservationConfirmForm(forms.Form):
+	reservation_id = forms.UUIDField()
+	code = forms.RegexField(regex=r'^\d{6}$', max_length=6, min_length=6)

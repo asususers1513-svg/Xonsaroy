@@ -1,22 +1,28 @@
 import html
 import logging
 import os
+import secrets
+from datetime import timedelta
 
 import requests
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.core.exceptions import ImproperlyConfigured
+from django.contrib.auth.hashers import check_password, make_password
+from django.db import transaction
 from django.http import JsonResponse, Http404
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.utils import timezone
-from .models import Apartment, ApartmentImage, Category, Client, Home, Material, SalesOffice, User, PasswordResetCode, Lead, BotUser
+from .models import Apartment, ApartmentImage, ApartmentReservation, Category, Client, Home, Material, SalesOffice, User, PasswordResetCode, Lead, BotUser
 from .forms import (
     UserRegisterForm, UserLoginForm, UserProfileForm, ContactRequestForm, OptionalPasswordChangeForm,
-    PasswordResetRequestForm, PasswordResetConfirmForm
+    PasswordResetRequestForm, PasswordResetConfirmForm, ApartmentReservationRequestForm,
+    ApartmentReservationConfirmForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,6 +101,7 @@ def contact_submit(request):
 
 
 def home(request):
+	expire_pending_apartment_reservations()
 	selected_status = request.GET.get('status', Home.Status.IN_PROGRESS)
 	selected_category = request.GET.get('category', 'all')
 	
@@ -169,6 +176,30 @@ def home(request):
 			apartment.down_payment = 0
 			apartment.monthly_payment = 0
 
+	floorplan_apartments = []
+	for apartment in Apartment.objects.filter(is_active=True).select_related('project', 'project__category'):
+		image = apartment.image_url or (apartment.image.url if apartment.image else '')
+		if apartment.project_id:
+			image = image or apartment.project.hero_image_url or (
+				apartment.project.hero_image.url if apartment.project.hero_image else ''
+			)
+		floorplan_apartments.append({
+			'id': apartment.id,
+			'unit_number': apartment.unit_number or f'#{apartment.id}',
+			'project_id': apartment.project_id,
+			'project_name': apartment.project.name if apartment.project_id else 'Xonadon',
+			'rooms': apartment.rooms,
+			'floor': apartment.floor,
+			'area': str(apartment.area),
+			'price': str(int(apartment.price)),
+			'availability': apartment.availability,
+			'category': apartment.project.category.name if apartment.project_id and apartment.project.category_id else 'Turar joy majmuasi',
+			'status': apartment.project.get_status_display() if apartment.project_id else 'Jarayonda',
+			'description': apartment.description or (apartment.project.description if apartment.project_id else ''),
+			'image': image,
+		})
+	inventory_projects = Home.objects.filter(apartments__is_active=True).distinct().order_by('name')
+
 	if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
 		grid_html = render_to_string('app/_apartment_grid.html', {
 			'apartments': apartments,
@@ -183,6 +214,8 @@ def home(request):
 		'categories': categories,
 		'homes': homes,
 		'projects': all_homes,
+		'inventory_projects': inventory_projects,
+		'floorplan_apartments': floorplan_apartments,
 		'featured_home': homes.first() or all_homes.first(),
 		'statuses': Home.Status.choices,
 		'selected_status': selected_status,
@@ -199,6 +232,198 @@ def home(request):
 			'min_price': filter_min_price or '',
 			'max_price': filter_max_price or '',
 		}
+	})
+
+
+def send_apartment_reservation_code_email(reservation, code):
+	if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+		raise ImproperlyConfigured('SMTP email sozlamalarini kiriting; konsol backend xatni yetkazmaydi.')
+	subject = 'Xon Saroy — bronni tasdiqlash kodi'
+	context = {'code': code, 'reservation': reservation, 'expires_minutes': 10}
+	html_content = render_to_string('emails/apartment_reservation_code.html', context)
+	text_content = (
+		f"Assalomu alaykum, {reservation.name}!\n\n"
+		f"{reservation.apartment.project or 'Xon Saroy'} loyihasidagi "
+		f"{reservation.apartment.rooms} xonali xonadon bronini tasdiqlash kodi: {code}\n\n"
+		"Ushbu kod 10 daqiqa davomida amal qiladi."
+	)
+	email = EmailMultiAlternatives(
+		subject=subject,
+		body=text_content,
+		from_email=settings.DEFAULT_FROM_EMAIL,
+		to=[reservation.email],
+	)
+	email.attach_alternative(html_content, 'text/html')
+	return email.send(fail_silently=False)
+
+
+def expire_pending_apartment_reservations():
+	now = timezone.now()
+	with transaction.atomic():
+		expired = ApartmentReservation.objects.select_for_update().filter(
+			status=ApartmentReservation.Status.PENDING,
+			expires_at__lte=now,
+		)
+		for reservation in expired:
+			reservation.status = ApartmentReservation.Status.EXPIRED
+			reservation.save(update_fields=['status'])
+			has_live_reservation = ApartmentReservation.objects.filter(
+				apartment_id=reservation.apartment_id,
+				status=ApartmentReservation.Status.PENDING,
+				expires_at__gt=now,
+			).exists()
+			if not has_live_reservation:
+				Apartment.objects.filter(
+					pk=reservation.apartment_id,
+					availability=Apartment.Availability.RESERVED,
+				).update(availability=Apartment.Availability.AVAILABLE)
+
+
+def release_apartment_reservation(reservation):
+	reservation.status = ApartmentReservation.Status.EXPIRED
+	reservation.save(update_fields=['status'])
+	has_live_reservation = ApartmentReservation.objects.filter(
+		apartment_id=reservation.apartment_id,
+		status=ApartmentReservation.Status.PENDING,
+		expires_at__gt=timezone.now(),
+	).exists()
+	if not has_live_reservation:
+		Apartment.objects.filter(
+			pk=reservation.apartment_id,
+			availability=Apartment.Availability.RESERVED,
+		).update(availability=Apartment.Availability.AVAILABLE)
+
+
+@require_POST
+def apartment_reservation_request_view(request):
+	form = ApartmentReservationRequestForm(request.POST)
+	if not form.is_valid():
+		return JsonResponse({
+			'success': False,
+			'message': next(iter(form.errors.values()))[0],
+		}, status=400)
+
+	cleaned = form.cleaned_data
+	now = timezone.now()
+	expire_pending_apartment_reservations()
+	recent_requests = ApartmentReservation.objects.filter(
+		email__iexact=cleaned['email'],
+		created_at__gte=now - timedelta(minutes=10),
+	).count()
+	if recent_requests >= 3:
+		return JsonResponse({
+			'success': False,
+			'message': 'Yangi tasdiqlash kodini so‘rash limiti tugadi. Birozdan keyin qayta urinib ko‘ring.',
+		}, status=429)
+
+	try:
+		apartment = Apartment.objects.select_related('project').get(
+			pk=cleaned['apartment_id'],
+			is_active=True,
+		)
+	except Apartment.DoesNotExist:
+		return JsonResponse({'success': False, 'message': 'Xonadon topilmadi.'}, status=404)
+	if apartment.availability != Apartment.Availability.AVAILABLE:
+		return JsonResponse({
+			'success': False,
+			'message': 'Bu xonadon hozir bo‘sh emas. Boshqa xonadon tanlang.',
+		}, status=409)
+
+	code = f'{secrets.randbelow(900000) + 100000}'
+	with transaction.atomic():
+		claimed = Apartment.objects.filter(
+			pk=apartment.pk,
+			is_active=True,
+			availability=Apartment.Availability.AVAILABLE,
+		).update(availability=Apartment.Availability.RESERVED)
+		if not claimed:
+			return JsonResponse({
+				'success': False,
+				'message': 'Bu xonadon hozirgina band qilindi. Boshqa xonadon tanlang.',
+			}, status=409)
+		reservation = ApartmentReservation.objects.create(
+			apartment=apartment,
+			name=cleaned['name'],
+			email=cleaned['email'],
+			phone=cleaned['phone'],
+			code_hash=make_password(code),
+			expires_at=now + timedelta(minutes=10),
+		)
+
+	try:
+		email_sent = send_apartment_reservation_code_email(reservation, code)
+	except Exception:
+		logger.exception('Xonadon bron kodi email orqali yuborilmadi.')
+		email_sent = 0
+	if not email_sent:
+		with transaction.atomic():
+			reservation = ApartmentReservation.objects.select_for_update().get(pk=reservation.pk)
+			release_apartment_reservation(reservation)
+		return JsonResponse({
+			'success': False,
+			'message': 'Tasdiqlash kodi emailingizga yuborilmadi. Email sozlamalarini tekshirib, qayta urinib ko‘ring.',
+		}, status=503)
+
+	return JsonResponse({
+		'success': True,
+		'reservation_id': str(reservation.public_id),
+		'message': 'Tasdiqlash kodi emailingizga yuborildi. Kod 10 daqiqa amal qiladi.',
+	})
+
+
+@require_POST
+def apartment_reservation_confirm_view(request):
+	form = ApartmentReservationConfirmForm(request.POST)
+	if not form.is_valid():
+		return JsonResponse({
+			'success': False,
+			'message': 'Bron raqami yoki 6 xonali tasdiqlash kodi noto‘g‘ri.',
+		}, status=400)
+
+	with transaction.atomic():
+		try:
+			reservation = ApartmentReservation.objects.select_for_update().select_related('apartment').get(
+				public_id=form.cleaned_data['reservation_id'],
+			)
+		except ApartmentReservation.DoesNotExist:
+			return JsonResponse({'success': False, 'message': 'Bron topilmadi.'}, status=404)
+
+		if reservation.status != ApartmentReservation.Status.PENDING:
+			return JsonResponse({
+				'success': False,
+				'message': 'Ushbu bron faol emas. Xonadonni qayta tanlang.',
+			}, status=409)
+		if reservation.expires_at <= timezone.now():
+			release_apartment_reservation(reservation)
+			return JsonResponse({
+				'success': False,
+				'message': 'Kodning amal qilish muddati tugadi. Xonadonni qayta tanlang.',
+			}, status=410)
+		if not check_password(form.cleaned_data['code'], reservation.code_hash):
+			reservation.attempts += 1
+			if reservation.attempts >= 5:
+				release_apartment_reservation(reservation)
+			else:
+				reservation.save(update_fields=['attempts'])
+			return JsonResponse({
+				'success': False,
+				'message': 'Tasdiqlash kodi noto‘g‘ri. Kodni tekshirib qayta kiriting.',
+			}, status=400)
+		if reservation.apartment.availability != Apartment.Availability.RESERVED:
+			release_apartment_reservation(reservation)
+			return JsonResponse({
+				'success': False,
+				'message': 'Xonadonni bron qilib bo‘lmadi. Boshqa xonadon tanlang.',
+			}, status=409)
+
+		reservation.status = ApartmentReservation.Status.CONFIRMED
+		reservation.confirmed_at = timezone.now()
+		reservation.save(update_fields=['status', 'confirmed_at'])
+
+	return JsonResponse({
+		'success': True,
+		'message': 'Email tasdiqlandi, xonadon broningiz muvaffaqiyatli tasdiqlandi.',
+		'apartment_id': reservation.apartment_id,
 	})
 
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Category, Home, Apartment, ApartmentImage, Material, Client, SalesOffice, PasswordResetCode, BotUser, Lead
+from .models import User, Category, Home, Apartment, ApartmentImage, ApartmentReservation, Material, Client, SalesOffice, PasswordResetCode, BotUser, Lead
 
 
 @admin.register(User)
@@ -38,11 +38,19 @@ class ApartmentImageInline(admin.TabularInline):
 
 @admin.register(Apartment)
 class ApartmentAdmin(admin.ModelAdmin):
-	list_display = ('project', 'rooms', 'floor', 'area', 'price', 'is_active', 'sort_order')
-	list_filter = ('project', 'rooms', 'floor', 'is_active')
+	list_display = ('project', 'unit_number', 'rooms', 'floor', 'area', 'price', 'availability', 'is_active', 'sort_order')
+	list_filter = ('project', 'rooms', 'floor', 'availability', 'is_active')
 	list_editable = ('is_active', 'sort_order', 'price')
-	fields = ('project', 'rooms', 'floor', 'area', 'price', 'image', 'description', 'is_active', 'sort_order')
+	fields = ('project', 'unit_number', 'rooms', 'floor', 'area', 'price', 'image', 'description', 'availability', 'is_active', 'sort_order')
 	inlines = [ApartmentImageInline]
+
+
+@admin.register(ApartmentReservation)
+class ApartmentReservationAdmin(admin.ModelAdmin):
+	list_display = ('apartment', 'name', 'email', 'phone', 'status', 'created_at', 'expires_at')
+	list_filter = ('status', 'created_at')
+	search_fields = ('name', 'email', 'phone', 'apartment__project__name')
+	readonly_fields = ('public_id', 'apartment', 'name', 'email', 'phone', 'code_hash', 'attempts', 'created_at', 'expires_at', 'confirmed_at')
 
 
 @admin.register(Material)

@@ -11,11 +11,15 @@
              data-title="{{ apartment.display_title }}"
              data-project-name="{{ apartment.project.name|default:'Xon Saroy' }}"
              data-category="{{ apartment.project.category.name|default:'Turar joy majmuasi' }}"
+             data-availability="{{ apartment.availability }}"
              data-status="{{ apartment.project.get_status_display|default:'Jarayonda' }}"
              data-status-code="{{ apartment.project.status|default:'in_progress' }}"
              data-description="{{ apartment.project.description|default:'Zamonaviy arxitektura, qulay infratuzilma, 9 ballik seysmik chidamlilik va yerosti avtoturargohi.' }}"
              data-image="{% if apartment.image_url %}{{ apartment.image_url }}{% elif apartment.image %}{{ apartment.image.url }}{% elif apartment.project.hero_image_url %}{{ apartment.project.hero_image_url }}{% elif apartment.project.hero_image %}{{ apartment.project.hero_image.url }}{% elif apartment.project.image_url %}{{ apartment.project.image_url }}{% elif apartment.project.image %}{{ apartment.project.image.url }}{% endif %}">
         <span class="apartment-badge apartment-unit-label" data-rooms="{{ apartment.rooms }}">{{ apartment.rooms }} xonali</span>
+        <span class="apartment-availability-badge is-{{ apartment.availability }}">
+            {% if apartment.availability == 'reserved' %}Bron qilingan{% elif apartment.availability == 'sold' %}Sotilgan{% else %}Bo‘sh{% endif %}
+        </span>
         {% if apartment.image_url %}
             <img src="{{ apartment.image_url }}" alt="{{ apartment.area }} m² xonadon rejasi" loading="lazy">
         {% elif apartment.image %}

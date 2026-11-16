@@ -51,8 +51,55 @@ Maxsus manzil login/parol va Django staff ruxsatlarini almashtirmaydi.
 
 Custom domen ulangan bo'lsa, uni `ALLOWED_HOSTS` ro'yxatiga host nomi sifatida,
 `CSRF_TRUSTED_ORIGINS` ro'yxatiga esa `https://` bilan qo'shing. Bir nechta
-qiymatni vergul bilan ajrating. Telegram, email va Google/GitHub login ishlatilsa,
-tegishli o'zgaruvchilarni ham `.env` ga kiriting.
+qiymatni vergul bilan ajrating. Telegram va email ishlatilsa, tegishli
+o'zgaruvchilarni ham `.env` ga kiriting.
+
+Xonadon bronini email kodi bilan tasdiqlash uchun `EMAIL_HOST_USER` va
+`EMAIL_HOST_PASSWORD` ni (Gmail uchun ilova parolini) albatta sozlang.
+Email yuborilmasa, bron tasdiqlanmaydi va xonadon yana bo‘sh holatga qaytadi.
+
+### Google va GitHub orqali kirish
+
+Google yoki GitHub tugmalari faqat tegishli Client ID va Secret `.env` faylida
+bo'lganda faollashadi. Google Cloud Console'da OAuth 2.0 Client ID (Web
+application) yarating va **Authorized redirect URI** ga quyidagini kiriting:
+
+```text
+https://yourusername.pythonanywhere.com/accounts/google/login/callback/
+```
+
+GitHub'da **OAuth App** yarating va **Authorization callback URL** sifatida
+quyidagini kiriting:
+
+```text
+https://yourusername.pythonanywhere.com/accounts/github/login/callback/
+```
+
+`yourusername.pythonanywhere.com` o'rniga haqiqiy PythonAnywhere domeningizni
+yozing. Custom domen ishlatilsa, OAuth sozlamalaridagi callback manzillarida ham
+o'sha domenni ishlating. Google Client ID/Secret va GitHub Client ID/Secret
+qiymatlarini PythonAnywhere'dagi `~/demo_day/.env` fayliga kiriting:
+
+```dotenv
+GOOGLE_CLIENT_ID=<Google Client ID>
+GOOGLE_CLIENT_SECRET=<Google Client Secret>
+GITHUB_CLIENT_ID=<GitHub Client ID>
+GITHUB_CLIENT_SECRET=<GitHub Client Secret>
+```
+
+Ishlatmaydigan provayder uchun qiymatlarni bo'sh qoldirish mumkin. Bu
+ma'lumotlarni chatga yoki GitHub'ga yubormang. Saqlagandan so'ng Bash console'da
+loyiha virtual muhitini faollashtirib, sozlamalar o'qilganini tekshiring:
+
+```bash
+cd ~/demo_day
+workon xonsaroy-venv
+python manage.py shell -c "from django.conf import settings; print('Google:', settings.GOOGLE_OAUTH_ENABLED, 'GitHub:', settings.GITHUB_OAUTH_ENABLED)"
+```
+
+Kerakli provayder uchun `True` chiqishi kerak. So'ng **Web → Reload** ni bosing.
+Bu kalitlarsiz ham email va parol orqali ro'yxatdan o'tish ishlayveradi; faqat
+Google/GitHub tugmalari o'chirilgan bo'ladi.
 
 Telegram bot va uning saytdagi tugmalari uchun `.env` ga quyidagilarni ham
 qo'shing. Tokenni BotFather beradi; tokenni chatga yoki GitHub'ga yubormang.
