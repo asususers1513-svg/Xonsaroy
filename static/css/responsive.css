@@ -31,6 +31,26 @@ iframe {
 }
 
 @media (max-width: 760px) {
+    .all-projects {
+        min-height: 42px;
+        margin-top: 24px;
+        padding: 0 7px 0 14px;
+        font-size: 12px;
+    }
+
+    .all-projects .all-projects-arrow {
+        width: 30px;
+        height: 30px;
+    }
+
+    .client-card {
+        flex-basis: calc((100% - 10px) / 2);
+    }
+
+    .contact-form textarea {
+        min-height: 84px;
+        font-size: 14px;
+    }
     .site-header {
         min-height: 0;
         padding: 8px 16px 4px;

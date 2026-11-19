@@ -204,7 +204,7 @@
             </div>
         {% endif %}
 
-        <a class="all-projects" href="?status=all#projects"><span data-i18n="allProjects">Barchasini ko‘rsatish</span> <span aria-hidden="true">↗</span></a>
+        <a class="all-projects" data-status="all" href="?status=all#projects"><span data-i18n="allProjects">Barchasini ko‘rsatish</span><span class="all-projects-arrow" aria-hidden="true">↗</span></a>
     </main>
 
     <section class="contact-section contact-question" id="contact-question">
@@ -633,9 +633,49 @@
         const detailArea = document.getElementById('detail-area');
         const detailPrice = document.getElementById('detail-price');
 
-        const openDetailModal = (card) => {
+        const openDetailModal = (card, isProject = false) => {
             if (!detailModal || !card) return;
             activeApartmentCard = card;
+            activeIsProject = isProject;
+            if (isProject) {
+                const title = card.dataset.projectName || 'Loyiha';
+                const category = card.dataset.projectCategory || 'Turar joy majmuasi';
+                const status = card.dataset.projectStatus || 'Jarayonda';
+                const description = card.dataset.projectDescription || '';
+                const imageUrl = card.dataset.projectImage || '';
+                const apartmentCount = card.dataset.projectAptsCount || '0';
+
+                document.getElementById('detail-modal-title').textContent = title;
+                document.getElementById('detail-modal-subtitle').textContent = `${category} · ${status}`;
+                document.getElementById('detail-category-badge').textContent = category;
+                document.getElementById('detail-status-badge').textContent = status;
+                document.getElementById('detail-status-val').textContent = status;
+                document.getElementById('detail-description').textContent = description;
+                document.getElementById('detail-modal-project-count').textContent =
+                    apartmentCount === '1' ? '1 ta xonadon' : `${apartmentCount} ta xonadon`;
+                document.getElementById('detail-modal-project-count').hidden = false;
+
+                const projectImage = document.getElementById('detail-modal-img');
+                projectImage.hidden = !imageUrl;
+                if (imageUrl) projectImage.src = imageUrl;
+                else projectImage.removeAttribute('src');
+                document.getElementById('detail-modal-placeholder').hidden = Boolean(imageUrl);
+
+                document.querySelector('.detail-modal--rich .detail-modal-grid').hidden = true;
+                document.getElementById('detail-modal-installment').hidden = true;
+                document.getElementById('detail-modal-spec-title').hidden = true;
+                document.querySelector('.detail-modal-form-wrap').hidden = true;
+                document.querySelector('.detail-modal-cta-bar').hidden = false;
+                detailModal.hidden = false;
+                return;
+            }
+
+            document.querySelector('.detail-modal--rich .detail-modal-grid').hidden = false;
+            document.getElementById('detail-modal-installment').hidden = false;
+            document.getElementById('detail-modal-spec-title').hidden = false;
+            document.querySelector('.detail-modal-form-wrap').hidden = false;
+            document.getElementById('detail-modal-project-count').hidden = true;
+
             const rooms = card.dataset.rooms || '—';
             const floor = card.dataset.floor || '—';
             const area = card.dataset.area || '—';
@@ -685,6 +725,11 @@
                 event.preventDefault();
                 const card = link.closest('.apartment-card');
                 openDetailModal(card);
+            }
+            const projectLink = event.target.closest('[data-project-link]');
+            if (projectLink) {
+                event.preventDefault();
+                openDetailModal(projectLink.closest('.project-card'), true);
             }
         });
 
@@ -1076,7 +1121,7 @@
             </div>
 
             <!-- Detailed Specs Grid (6 Cards) -->
-            <div class="detail-section-title" data-i18n="specsTitle">Asosiy ma’lumotlar:</div>
+            <div class="detail-section-title" id="detail-modal-spec-title" data-i18n="specsTitle">Asosiy ma’lumotlar:</div>
             <div class="detail-modal-grid">
                 <div class="spec-card">
                     <span id="detail-rooms-label">🚪 Xonalar</span>
@@ -1129,6 +1174,7 @@
             <div class="detail-modal-section">
                 <h4 data-i18n="descriptionTitle">Loyiha va xonadon haqida:</h4>
                 <p id="detail-description">Zamonaviy arxitektura, qulay infratuzilma va yuqori sifatli qurilish standartlari.</p>
+                <span class="detail-project-count" id="detail-modal-project-count" hidden></span>
             </div>
 
             <!-- Amenities / Afzalliklar & Infratuzilma -->
@@ -1297,8 +1343,14 @@
             button.addEventListener('click', () => {
                 const track = document.getElementById(button.dataset.scroll);
                 if (track) {
+                    const cards = track.querySelectorAll('.client-card');
+                    let scrollDistance = track.clientWidth;
+                    if (track.id === 'clients-track' && cards.length) {
+                        const gap = parseFloat(getComputedStyle(track).gap) || 0;
+                        scrollDistance = (cards[0].getBoundingClientRect().width * 2) + gap;
+                    }
                     track.scrollBy({
-                        left: track.clientWidth * Number(button.dataset.direction),
+                        left: scrollDistance * Number(button.dataset.direction),
                         behavior: 'smooth',
                     });
                 }
@@ -1321,6 +1373,54 @@
                     const minimum = document.getElementById('price-min-filter').value || document.querySelector('[data-filter-target="price-min-filter"]').value;
                     const maximum = document.getElementById('price-max-filter').value || document.querySelector('[data-filter-target="price-max-filter"]').value;
                     document.getElementById('price-output').textContent = `${formatFilterNumber(minimum)} — ${formatFilterNumber(maximum)}`;
+                }
+            });
+        });
+
+        const projectFilters = document.querySelectorAll('.filter-link[data-status], .all-projects[data-status]');
+        let projectFilterAbortController = null;
+
+        projectFilters.forEach((filterLink) => {
+            filterLink.addEventListener('click', async (event) => {
+                event.preventDefault();
+                if (projectFilterAbortController) projectFilterAbortController.abort();
+                projectFilterAbortController = new AbortController();
+
+                projectFilters.forEach((link) => {
+                    link.classList.remove('is-active');
+                    link.removeAttribute('aria-current');
+                });
+                filterLink.classList.add('is-active');
+                filterLink.setAttribute('aria-current', 'page');
+
+                const status = filterLink.dataset.status;
+                const params = new URLSearchParams({
+                    status,
+                    projects_ajax: '1',
+                    ajax: '1',
+                });
+                try {
+                    const response = await fetch(`/?${params.toString()}#projects`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        signal: projectFilterAbortController.signal,
+                    });
+                    const result = await response.json();
+                    if (!result.success) throw new Error(result.message || 'Filter error');
+                    const gridContainer = document.querySelector('#projects');
+                    const oldGrid = gridContainer.querySelector('.project-grid, .empty-state');
+                    if (oldGrid) {
+                        oldGrid.outerHTML = result.html;
+                    } else {
+                        gridContainer.insertAdjacentHTML('beforeend', result.html);
+                    }
+                    window.history.replaceState(null, '', `?status=${status}#projects`);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Project filter error:', error);
+                        window.location.href = filterLink.href;
+                    }
                 }
             });
         });

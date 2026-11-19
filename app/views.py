@@ -211,6 +211,14 @@ def home(request):
 	inventory_projects = Home.objects.filter(apartments__is_active=True).distinct().order_by('name')
 
 	if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+		if request.GET.get('projects_ajax') == '1':
+			project_grid_html = render_to_string('app/_project_grid.html', {
+				'homes': homes,
+			}, request=request)
+			return JsonResponse({
+				'success': True,
+				'html': project_grid_html,
+			})
 		grid_html = render_to_string('app/_apartment_grid.html', {
 			'apartments': apartments,
 		}, request=request)

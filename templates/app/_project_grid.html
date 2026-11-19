@@ -1,0 +1,43 @@
+{% if homes %}
+    <div class="project-grid">
+        {% for home in homes %}
+            <article class="project-card"
+                     data-project-id="{{ home.id }}"
+                     data-project-name="{{ home.name }}"
+                     data-project-category="{{ home.category.name|default:'Turar joy majmuasi' }}"
+                     data-project-status="{{ home.get_status_display }}"
+                     data-project-status-code="{{ home.status }}"
+                     data-project-description="{{ home.description|default:'Zamonaviy arxitektura, qulay infratuzilma, 9 ballik seysmik chidamlilik va yerosti avtoturargohi.' }}"
+                     data-project-image="{% if home.hero_image %}{{ home.hero_image.url }}{% elif home.hero_image_url %}{{ home.hero_image_url }}{% elif home.image %}{{ home.image.url }}{% elif home.image_url %}{{ home.image_url }}{% endif %}"
+                     data-project-apts-count="{{ home.apartments.count }}">
+                <div class="project-image-wrap">
+                    {% if home.image_url %}
+                        <img class="project-image" src="{{ home.image_url }}" alt="{{ home.name }} turar joy majmuasi" loading="lazy">
+                    {% elif home.image %}
+                        <img class="project-image" src="{{ home.image.url }}" alt="{{ home.name }} turar joy majmuasi" loading="lazy">
+                    {% else %}
+                        <div class="image-placeholder" role="img" aria-label="{{ home.name }} loyihasi rasmi">
+                            <span>XON SAROY</span>
+                        </div>
+                    {% endif %}
+                    <span class="status-badge status-{{ home.status }}">{{ home.get_status_display }}</span>
+                </div>
+                <div class="project-info">
+                    <p class="project-category">{{ home.category.name|default:"Turar joy majmuasi" }}</p>
+                    <h2>{{ home.name }}</h2>
+                    {% if home.description %}<p class="project-description">{{ home.description }}</p>{% endif %}
+                    <div class="project-card-footer">
+                        <button type="button" class="project-details-btn" data-project-link data-i18n="details">Batafsil</button>
+                        <span>{{ home.apartments.count }} ta xonadon</span>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-mark">XS</span>
+        <h2 data-i18n="emptyProjectsTitle">Yangi loyihalar tez kunda</h2>
+        <p data-i18n="emptyProjectsDescription">Xon Saroy yangi turar joy majmualarini bunyod etmoqda.</p>
+    </div>
+{% endif %}

@@ -83,6 +83,19 @@ class RequirementsModelAndFilterTests(TestCase):
         self.assertContains(response, 'id="apartment-reservation-request-form"')
         self.assertContains(response, 'data-title="Vatan"')
 
+    def test_project_status_can_be_loaded_without_full_page_navigation(self):
+        response = self.client.get(
+            reverse('home') + '?status=in_progress&projects_ajax=1&ajax=1',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        self.assertIn('project-grid', response.json()['html'])
+        self.assertContains(
+            self.client.get(reverse('home')),
+            'data-project-link',
+        )
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_apartment_reservation_requires_email_code_and_marks_unit_reserved(self):
         response = self.client.post(reverse('apartment_reservation_request'), {
