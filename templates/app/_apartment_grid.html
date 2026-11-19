@@ -18,7 +18,7 @@
              data-image="{% if apartment.image_url %}{{ apartment.image_url }}{% elif apartment.image %}{{ apartment.image.url }}{% elif apartment.project.hero_image_url %}{{ apartment.project.hero_image_url }}{% elif apartment.project.hero_image %}{{ apartment.project.hero_image.url }}{% elif apartment.project.image_url %}{{ apartment.project.image_url }}{% elif apartment.project.image %}{{ apartment.project.image.url }}{% endif %}">
         <span class="apartment-badge apartment-unit-label" data-rooms="{{ apartment.rooms }}">{{ apartment.rooms }} xonali</span>
         <span class="apartment-availability-badge is-{{ apartment.availability }}">
-            {% if apartment.availability == 'reserved' %}Bron qilingan{% elif apartment.availability == 'sold' %}Sotilgan{% else %}Bo‘sh{% endif %}
+            {% if apartment.availability == 'reserved' %}Bron qilingan{% elif apartment.availability == 'sold' %}Band{% else %}Bo‘sh{% endif %}
         </span>
         {% if apartment.image_url %}
             <img src="{{ apartment.image_url }}" alt="{{ apartment.area }} m² xonadon rejasi" loading="lazy">

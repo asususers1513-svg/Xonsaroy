@@ -649,7 +649,13 @@ class TelegramBot:
         for a in apts[:10]:
             p_name = a.project.name if a.project else "Xon Saroy"
             price_str = fmt_sum(a.price)
-            btn_title = f"{p_name}: {a.rooms}-xona, {a.area} m² — {price_str} so‘m"
+            if lang == 'uz':
+                status = {'available': 'Bo‘sh', 'reserved': 'Bron', 'sold': 'Band'}.get(a.availability, 'Bo‘sh')
+            elif lang == 'ru':
+                status = {'available': 'Свободна', 'reserved': 'Бронь', 'sold': 'Заблокирована'}.get(a.availability, 'Свободна')
+            else:
+                status = {'available': 'Available', 'reserved': 'Reserved', 'sold': 'Unavailable'}.get(a.availability, 'Available')
+            btn_title = f"{p_name}: {a.rooms}-xona, {a.area} m² — {price_str} so‘m · {status}"
             apt_buttons.append([{'text': btn_title, 'callback_data': f"apt_detail_{a.id}"}])
 
         inline_kb = {'inline_keyboard': [filter_row] + apt_buttons}
@@ -676,6 +682,7 @@ class TelegramBot:
             f"📐 <b>Umumiy maydon:</b> {apt.area} m²\n"
             f"💰 <b>1 m² narxi:</b> ~{m2_price} so‘m\n"
             f"🏷 <b>Umumiy narx:</b> <b>{total_price} so‘m</b>\n"
+            f"🔑 <b>Holati:</b> {('Bo‘sh' if apt.availability == 'available' else 'Bron qilingan' if apt.availability == 'reserved' else 'Band')}\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"<i>* 0% foizsiz muddatli to‘lov imkoniyati mavjud.</i>"
         )
@@ -700,8 +707,11 @@ class TelegramBot:
         inline_kb = {
             'inline_keyboard': [
                 [{'text': btn_calc, 'callback_data': f"calc_apt_{apt.id}"}],
-                [{'text': btn_book, 'callback_data': f"book_apt_{apt.id}"}],
-                [{'text': btn_back, 'callback_data': 'apts_rm_all'}]
+                ([{'text': btn_book, 'callback_data': f"book_apt_{apt.id}"}]
+                 if apt.availability == 'available' else
+                 [{'text': ('🔒 Bu xonadon band' if lang == 'uz' else '🔒 This apartment is unavailable'),
+                   'callback_data': 'apts_rm_all'}]),
+                [{'text': btn_back, 'callback_data': 'apts_rm_all'}],
             ]
         }
 
@@ -1281,6 +1291,9 @@ class TelegramBot:
                         elif data_val.startswith('book_apt_'):
                             aid = int(data_val.replace('book_apt_', ''))
                             a = Apartment.objects.filter(id=aid).first()
+                            if not a or a.availability != 'available':
+                                self.send_message(chat_id, "Bu xonadon hozir bo‘sh emas.")
+                                continue
                             p_name = a.project.name if (a and a.project) else "Xon Saroy"
                             note = f"Band qilish uchun xonadon: {p_name}, {a.rooms}-xona, {a.area} m², {fmt_sum(a.price)} so'm" if a else "Xonadonni band qilish"
                             self.request_consultation_prompt(chat_id, note=note)

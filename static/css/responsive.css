@@ -491,6 +491,7 @@ iframe {
     .apartment-inventory {
         margin-bottom: 24px;
         padding: 16px 12px;
+        border-radius: 12px;
     }
 
     .inventory-heading {
@@ -504,28 +505,63 @@ iframe {
         width: 100%;
     }
 
+    .inventory-heading select {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .inventory-legend {
+        width: 100%;
+        gap: 10px;
+        justify-content: space-between;
+        font-size: 11px;
+    }
+
     .inventory-house {
         padding: 14px 8px 0;
+        border-bottom-width: 6px;
+        min-height: 260px;
+        max-height: 620px;
+    }
+
+    .inventory-house-shape {
+        width: calc(100% - 8px);
+        padding: 7px 7px 0;
+        border-width: 7px;
+        border-bottom: 0;
+    }
+
+    .inventory-house-shape::before {
+        right: -18px;
+        width: 16px;
+    }
+
+    .inventory-house-shape::after {
+        top: -24px;
+        right: -10px;
+        left: -10px;
+        height: 22px;
     }
 
     .inventory-floor {
-        min-height: 72px;
-        grid-template-columns: 66px minmax(0, 1fr);
+        min-height: 58px;
+        grid-template-columns: 54px minmax(0, 1fr);
     }
 
     .inventory-units {
+        grid-template-columns: repeat(var(--unit-columns, 4), minmax(32px, 44px));
         gap: 6px;
         padding: 8px 5px;
+        min-height: 58px;
     }
 
     .inventory-unit {
-        width: 42px;
-        height: 58px;
+        width: 100%;
+        height: 44px;
     }
 
-    .inventory-unit-roof {
-        left: 2px;
-        width: 29px;
+    .inventory-unit-label {
+        font-size: 8px;
     }
 
     .detail-modal--rich {

@@ -274,7 +274,7 @@
                 detailStatus: 'Holati',
                 statusAvailable: 'Sotuvda mavjud',
                 statusReserved: 'Bron qilingan',
-                statusSold: 'Sotilgan',
+                statusSold: 'Band',
                 specsTitle: 'Asosiy ma’lumotlar:',
                 installmentTitle: '0% foizsiz muddatli to‘lov imkoniyati',
                 installmentSubtitle: 'Xon Saroy majmualarida qulay to‘lov rejalari',
@@ -358,7 +358,7 @@
                 detailStatus: 'Статус',
                 statusAvailable: 'В продаже',
                 statusReserved: 'Забронирована',
-                statusSold: 'Продана',
+                statusSold: 'Заблокирована',
                 specsTitle: 'Основные параметры:',
                 installmentTitle: 'Беспроцентная рассрочка 0%',
                 installmentSubtitle: 'Удобные планы выплат в комплексах Xon Saroy',
@@ -442,7 +442,7 @@
                 detailStatus: 'Status',
                 statusAvailable: 'Available for Sale',
                 statusReserved: 'Reserved',
-                statusSold: 'Sold',
+                statusSold: 'Unavailable',
                 specsTitle: 'Key Specifications:',
                 installmentTitle: '0% Interest-free Installment Plan',
                 installmentSubtitle: 'Convenient payment options across Xon Saroy complexes',
@@ -571,7 +571,7 @@
             });
 
             document.querySelectorAll('.room-option').forEach((button) => {
-                if (button.value === '') {
+                if (button.dataset.room === '') {
                     button.textContent = dict.allLabel;
                 }
             });
@@ -741,7 +741,16 @@
                 floors.get(apartment.floor).push(apartment);
             });
 
-            floors.forEach((units, floor) => {
+            const maximumFloor = Math.max(...apartments.map((apartment) => Number(apartment.floor) || 1));
+            const slotsPerFloor = Math.max(
+                4,
+                ...Array.from(floors.values(), (units) => units.length)
+            );
+            house.style.setProperty('--floor-count', String(maximumFloor));
+            house.style.setProperty('--unit-columns', String(Math.min(slotsPerFloor, 8)));
+
+            for (let floor = maximumFloor; floor >= 1; floor -= 1) {
+                const units = floors.get(floor) || [];
                 const row = document.createElement('div');
                 row.className = 'inventory-floor';
                 const floorLabel = document.createElement('strong');
@@ -750,25 +759,37 @@
                 row.appendChild(floorLabel);
                 const unitList = document.createElement('div');
                 unitList.className = 'inventory-units';
+                unitList.style.setProperty('--unit-columns', String(Math.min(slotsPerFloor, 8)));
+
                 units.forEach((apartment) => {
                     const unit = document.createElement('button');
                     const availability = apartment.availability || 'available';
                     unit.type = 'button';
                     unit.className = `inventory-unit is-${availability}`;
-                    unit.disabled = availability !== 'available';
-                    unit.setAttribute('aria-label', `${floor}-qavat, ${apartment.rooms} xonali, ${availability}`);
-                    unit.title = `${floor}-qavat · ${apartment.rooms} xonali · ${availability}`;
-                    unit.innerHTML = '<span class="inventory-unit-roof" aria-hidden="true"></span><span class="inventory-unit-number" aria-hidden="true">⌂</span>';
+                    const statusLabel = availability === 'sold'
+                        ? 'Band'
+                        : availability === 'reserved'
+                            ? 'Bron qilingan'
+                            : 'Bo‘sh';
+                    unit.setAttribute('aria-label', `${floor}-qavat, ${apartment.rooms} xonali, ${statusLabel}`);
+                    unit.title = `${floor}-qavat · ${apartment.rooms} xonali · ${statusLabel}`;
                     const unitLabel = document.createElement('small');
                     unitLabel.className = 'inventory-unit-label';
-                    unitLabel.textContent = apartment.unit_number;
+                    unitLabel.textContent = `${apartment.unit_number} · ${apartment.rooms} xona`;
                     unit.appendChild(unitLabel);
                     unit.addEventListener('click', () => openDetailModal(createInventoryApartmentCard(apartment)));
                     unitList.appendChild(unit);
                 });
+
+                for (let slot = units.length; slot < slotsPerFloor; slot += 1) {
+                    const windowPanel = document.createElement('span');
+                    windowPanel.className = 'inventory-unit inventory-window';
+                    windowPanel.setAttribute('aria-hidden', 'true');
+                    unitList.appendChild(windowPanel);
+                }
                 row.appendChild(unitList);
                 house.appendChild(row);
-            });
+            }
             inventoryContainer.appendChild(house);
         };
 
@@ -869,7 +890,7 @@
             <div class="inventory-legend" aria-label="Xonadon holatlari">
                 <span><i class="is-available"></i> Bo‘sh</span>
                 <span><i class="is-reserved"></i> Bron qilingan</span>
-                <span><i class="is-sold"></i> Sotilgan</span>
+                <span><i class="is-sold"></i> Band</span>
             </div>
             <div class="inventory-house" id="apartment-inventory" aria-live="polite"></div>
             <p class="inventory-empty" id="inventory-empty" hidden>Ushbu majmuada hozircha xonadonlar yo‘q.</p>
@@ -888,6 +909,15 @@
                         {% for cat in categories %}
                             <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
                         {% endfor %}
+                    </select>
+                </label>
+
+                <label class="toolbar-select" id="availability-filter-label">Holat
+                    <select name="availability" id="availability-filter">
+                        <option value="">Barchasi</option>
+                        <option value="available" {% if filters.availability == 'available' %}selected{% endif %}>Bo‘sh</option>
+                        <option value="reserved" {% if filters.availability == 'reserved' %}selected{% endif %}>Bron qilingan</option>
+                        <option value="sold" {% if filters.availability == 'sold' %}selected{% endif %}>Band</option>
                     </select>
                 </label>
 
@@ -1007,6 +1037,8 @@
         <h2 data-i18n="contactTitle">Savollaringiz bormi?</h2>
         <p data-i18n="contactDescription">Kontaktlaringizni qoldiring, barcha savollaringizga javob beramiz.</p>
         <form class="contact-form" id="contact-form">
+            {% csrf_token %}
+            <input type="hidden" name="message" value="Saytning asosiy bog‘lanish formasi">
             <label class="visually-hidden" for="contact-name">Ism</label>
             <input id="contact-name" name="name" placeholder="Ism" data-i18n-placeholder="fieldName" required>
             <label class="visually-hidden" for="contact-phone">Telefon</label>
@@ -1117,7 +1149,7 @@
                 <a href="tel:+998712007400" class="detail-call-btn">
                     <span>📞</span> +998 71 200 74 00
                 </a>
-                <a href="https://t.me/XonSaroy_apartment_bot" target="_blank" rel="noreferrer" class="detail-telegram-btn">
+                <a href="https://t.me/xonsaroyrasmiybot" target="_blank" rel="noreferrer" class="detail-telegram-btn">
                     <span>💬</span> Telegram bot
                 </a>
             </div>
@@ -1295,11 +1327,64 @@
 
         const contactForm = document.getElementById('contact-form');
         if (contactForm) {
-            contactForm.addEventListener('submit', (event) => {
+            contactForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                const name = encodeURIComponent(document.getElementById('contact-name').value.trim());
-                const phone = encodeURIComponent(document.getElementById('contact-phone').value.trim());
-                window.location.href = `mailto:xansaroyuz@gmail.com?subject=Saytdan%20ariza&body=Ism:%20${name}%0ATelefon:%20${phone}`;
+                const button = contactForm.querySelector('button[type="submit"]');
+                button.disabled = true;
+                try {
+                    const response = await fetch('{% url "contact_submit" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': contactForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                        },
+                        body: new FormData(contactForm),
+                    });
+                    const result = await response.json();
+                    const feedback = document.createElement('div');
+                    feedback.className = `contact-feedback ${result.success ? 'is-success' : 'is-error'}`;
+                    feedback.textContent = result.message || 'Ariza yuborildi.';
+                    contactForm.querySelector('.contact-feedback')?.remove();
+                    contactForm.appendChild(feedback);
+                    if (result.success) contactForm.reset();
+                } catch (error) {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'contact-feedback is-error';
+                    feedback.textContent = 'Ariza yuborilmadi. Qayta urinib ko‘ring.';
+                    contactForm.appendChild(feedback);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        }
+
+        const callbackForm = document.getElementById('callback-form');
+        if (callbackForm) {
+            callbackForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const button = callbackForm.querySelector('button[type="submit"]');
+                const feedback = document.getElementById('callback-feedback');
+                button.disabled = true;
+                feedback.textContent = 'Yuborilmoqda...';
+                feedback.classList.remove('is-error');
+                feedback.classList.add('is-loading');
+                try {
+                    const response = await fetch(callbackForm.action, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': callbackForm.querySelector('[name=csrfmiddlewaretoken]').value},
+                        body: new FormData(callbackForm),
+                    });
+                    const result = await response.json();
+                    feedback.textContent = result.message || 'Ariza yuborildi.';
+                    feedback.classList.remove('is-loading');
+                    feedback.classList.toggle('is-error', !result.success);
+                    if (result.success) callbackForm.reset();
+                } catch (error) {
+                    feedback.textContent = 'Ariza yuborilmadi. Qayta urinib ko‘ring.';
+                    feedback.classList.remove('is-loading');
+                    feedback.classList.add('is-error');
+                } finally {
+                    button.disabled = false;
+                }
             });
         }
 
@@ -1371,6 +1456,7 @@
         const apartmentCountNumber = document.getElementById('apartment-count-number') || document.querySelector('.apartment-count strong');
         const roomsFilter = document.getElementById('rooms-filter');
         const categorySelect = document.getElementById('apartment-category-select');
+        const availabilityFilter = document.getElementById('availability-filter');
         const clearFiltersLink = document.getElementById('clear-filters-link');
 
         let filterAbortController = null;
@@ -1440,6 +1526,12 @@
             });
         }
 
+        if (availabilityFilter) {
+            availabilityFilter.addEventListener('change', () => {
+                applyApartmentFilters();
+            });
+        }
+
         document.querySelectorAll('#room-options .room-option').forEach((btn) => {
             btn.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -1460,6 +1552,7 @@
             clearFiltersLink.addEventListener('click', (event) => {
                 event.preventDefault();
                 if (categorySelect) categorySelect.value = 'all';
+                if (availabilityFilter) availabilityFilter.value = '';
                 if (roomsFilter) roomsFilter.value = '';
                 document.querySelectorAll('#room-options .room-option').forEach((b, idx) => {
                     b.classList.toggle('is-selected', idx === 0);

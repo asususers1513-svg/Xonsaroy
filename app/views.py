@@ -90,14 +90,19 @@ def contact_submit(request):
 
     if not recipient_chat:
         return JsonResponse({
-            'success': False,
-            'message': 'Arizangiz saqlandi, lekin Telegram admin ID serverda sozlanmagan.'
-        }, status=503)
+            'success': True,
+            'warning': True,
+            'message': 'Arizangiz qabul qilindi. Admin Telegram xabarnomasini sozlash kerak.'
+        })
 
     sent, message = send_telegram_message(recipient_chat, text)
     if sent:
         return JsonResponse({'success': True, 'message': 'Arizangiz muvaffaqiyatli yuborildi.'})
-    return JsonResponse({'success': False, 'message': message}, status=400)
+    return JsonResponse({
+        'success': True,
+        'warning': True,
+        'message': f'Arizangiz bazaga saqlandi, ammo Telegramga yuborilmadi: {message}',
+    })
 
 
 def home(request):
@@ -112,6 +117,7 @@ def home(request):
 	filter_max_area = request.GET.get('max_area')
 	filter_min_price = request.GET.get('min_price')
 	filter_max_price = request.GET.get('max_price')
+	filter_availability = request.GET.get('availability')
 
 	categories = Category.objects.all()
 	all_homes = Home.objects.select_related('category').prefetch_related('apartments').order_by('id')
@@ -129,7 +135,11 @@ def home(request):
 		apartments = apartments.filter(project__category_id=selected_category)
 
 	if filter_rooms and filter_rooms.isdigit():
-		apartments = apartments.filter(rooms=int(filter_rooms))
+		room_count = int(filter_rooms)
+		apartments = apartments.filter(rooms__gte=room_count) if room_count == 4 else apartments.filter(rooms=room_count)
+
+	if filter_availability in Apartment.Availability.values:
+		apartments = apartments.filter(availability=filter_availability)
 
 	if filter_floor and filter_floor.isdigit():
 		apartments = apartments.filter(floor=int(filter_floor))
@@ -231,6 +241,7 @@ def home(request):
 			'max_area': filter_max_area or '',
 			'min_price': filter_min_price or '',
 			'max_price': filter_max_price or '',
+			'availability': filter_availability or '',
 		}
 	})
 
