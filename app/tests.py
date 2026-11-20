@@ -77,6 +77,18 @@ class RequirementsModelAndFilterTests(TestCase):
         self.assertContains(res, '110,0 m²')
         self.assertNotContains(res, '50,0 m²')
 
+        res = self.client.get(
+            reverse('home') + f'?project={self.home1.pk}&floor_min=2&floor_max=4'
+        )
+        self.assertContains(res, '50,0 m²')
+        self.assertNotContains(res, '110,0 m²')
+
+        ajax_res = self.client.get(
+            reverse('home') + f'?project={self.home2.pk}&floor_min=8&floor_max=8&ajax=1',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(ajax_res.json()['count'], 1)
+
     def test_apartment_details_include_request_form(self):
         response = self.client.get(reverse('home'))
 

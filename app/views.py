@@ -113,6 +113,9 @@ def home(request):
 	# Filter params for Apartments
 	filter_rooms = request.GET.get('rooms')
 	filter_floor = request.GET.get('floor')
+	filter_floor_min = request.GET.get('floor_min')
+	filter_floor_max = request.GET.get('floor_max')
+	filter_project = request.GET.get('project')
 	filter_min_area = request.GET.get('min_area')
 	filter_max_area = request.GET.get('max_area')
 	filter_min_price = request.GET.get('min_price')
@@ -143,6 +146,15 @@ def home(request):
 
 	if filter_floor and filter_floor.isdigit():
 		apartments = apartments.filter(floor=int(filter_floor))
+
+	if filter_project and filter_project.isdigit():
+		apartments = apartments.filter(project_id=int(filter_project))
+
+	if filter_floor_min and filter_floor_min.isdigit():
+		apartments = apartments.filter(floor__gte=int(filter_floor_min))
+
+	if filter_floor_max and filter_floor_max.isdigit():
+		apartments = apartments.filter(floor__lte=int(filter_floor_max))
 
 	if filter_min_area:
 		try:
@@ -209,6 +221,10 @@ def home(request):
 			'image': image,
 		})
 	inventory_projects = Home.objects.filter(apartments__is_active=True).distinct().order_by('name')
+	max_floor = max(
+		16,
+		Apartment.objects.filter(is_active=True).order_by('-floor').values_list('floor', flat=True).first() or 0,
+	)
 
 	if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
 		if request.GET.get('projects_ajax') == '1':
@@ -238,6 +254,7 @@ def home(request):
 		'statuses': Home.Status.choices,
 		'selected_status': selected_status,
 		'selected_category': selected_category,
+		'max_floor': max_floor,
 		'apartments': apartments,
 		'materials': Material.objects.all(),
 		'clients': Client.objects.all(),
@@ -245,6 +262,9 @@ def home(request):
 		'filters': {
 			'rooms': filter_rooms or '',
 			'floor': filter_floor or '',
+			'floor_min': filter_floor_min or '',
+			'floor_max': filter_floor_max or '',
+			'project': filter_project or '',
 			'min_area': filter_min_area or '',
 			'max_area': filter_max_area or '',
 			'min_price': filter_min_price or '',

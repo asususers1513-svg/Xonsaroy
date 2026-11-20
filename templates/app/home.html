@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#f4f4f1">
     <title>Xon Saroy — turar joy majmualari</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=9">
-    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=12">
 </head>
 <body>
     <header class="site-header">
@@ -161,7 +161,7 @@
         </nav>
 
         {% if homes %}
-            <div class="project-grid">
+            <div class="project-grid{% if homes|length == 1 %} project-grid--single{% elif homes|length == 2 %} project-grid--paired{% endif %}">
                 {% for home in homes %}
                     <article class="project-card"
                              data-project-id="{{ home.id }}"
@@ -258,6 +258,8 @@
                 clearFilters: 'Tozalash',
                 applyFilters: 'Filtrlash',
                 floorLabel: 'Qavat',
+                projectLabel: 'Loyiha',
+                allProjectsLabel: 'Barcha loyihalar',
                 areaLabel: 'Maydon, m²',
                 priceLabel: 'Narx, so‘m',
                 details: 'Batafsil',
@@ -342,6 +344,8 @@
                 clearFilters: 'Сбросить',
                 applyFilters: 'Фильтр',
                 floorLabel: 'Этаж',
+                projectLabel: 'Проект',
+                allProjectsLabel: 'Все проекты',
                 areaLabel: 'Площадь, м²',
                 priceLabel: 'Цена, сум',
                 details: 'Подробнее',
@@ -426,6 +430,8 @@
                 clearFilters: 'Clear',
                 applyFilters: 'Filter',
                 floorLabel: 'Floor',
+                projectLabel: 'Project',
+                allProjectsLabel: 'All projects',
                 areaLabel: 'Area, m²',
                 priceLabel: 'Price, sum',
                 details: 'Details',
@@ -586,10 +592,12 @@
                 label.textContent = `${Number(label.dataset.price).toLocaleString(lang === 'uz' ? 'uz-UZ' : lang === 'ru' ? 'ru-RU' : 'en-US')} ${dict.currencyUnit}`;
             });
             const floorOutput = document.getElementById('floor-output');
-            if (floorOutput && /^\d+$/.test(floorOutput.textContent)) {
-                floorOutput.textContent = `${floorOutput.textContent}${dict.floorUnit}`;
-            } else if (floorOutput) {
-                floorOutput.textContent = dict.allLabel;
+            if (floorOutput) {
+                const floorMinimum = document.querySelector('[data-filter-target="floor-min-filter"]');
+                const floorMaximum = document.querySelector('[data-filter-target="floor-max-filter"]');
+                if (floorMinimum && floorMaximum) {
+                    floorOutput.textContent = `${floorMinimum.value} — ${floorMaximum.value}`;
+                }
             }
 
             updateApartmentDetailsText(lang);
@@ -978,21 +986,34 @@
                     <input type="hidden" name="rooms" id="rooms-filter" value="{{ filters.rooms }}">
                 </div>
 
-                <label class="toolbar-range" id="floor-label"><span data-i18n="floorLabel">Qavat</span> <output id="floor-output">{% if filters.floor %}{{ filters.floor }}{% else %}Barchasi{% endif %}</output>
-                    <input type="range" min="1" max="8" value="{{ filters.floor|default:'1' }}" data-filter-target="floor-filter" aria-label="Qavat">
-                    <input type="hidden" name="floor" id="floor-filter" value="{{ filters.floor }}">
+                <div class="toolbar-range" id="floor-label"><span data-i18n="floorLabel">Qavat</span> <output id="floor-output">{{ filters.floor_min|default:'1' }} — {{ filters.floor_max|default:max_floor }}</output>
+                    <div class="range-pair">
+                        <input type="range" min="1" max="{{ max_floor }}" step="1" value="{{ filters.floor_min|default:'1' }}" data-filter-target="floor-min-filter" aria-label="Eng past qavat">
+                        <input type="range" min="1" max="{{ max_floor }}" step="1" value="{{ filters.floor_max|default:max_floor }}" data-filter-target="floor-max-filter" aria-label="Eng yuqori qavat">
+                    </div>
+                    <input type="hidden" name="floor_min" id="floor-min-filter" value="{{ filters.floor_min }}">
+                    <input type="hidden" name="floor_max" id="floor-max-filter" value="{{ filters.floor_max }}">
+                </div>
+
+                <label class="toolbar-select" id="project-filter-label"><span data-i18n="projectLabel">Loyiha</span>
+                    <select name="project" id="apartment-project-select">
+                        <option value="" data-i18n="allProjectsLabel">Barcha loyihalar</option>
+                        {% for project in inventory_projects %}
+                            <option value="{{ project.id }}" {% if filters.project == project.id|stringformat:"s" %}selected{% endif %}>{{ project.name }}</option>
+                        {% endfor %}
+                    </select>
                 </label>
 
-                <div class="toolbar-range" id="area-range-label"><span data-i18n="areaLabel">Maydon, m²</span> <output id="area-output">{{ filters.min_area|default:'33' }} — {{ filters.max_area|default:'110' }}</output>
+                <div class="toolbar-range" id="area-range-label"><span data-i18n="areaLabel">Maydon, m²</span> <output id="area-output">{{ filters.min_area|default:'10' }} — {{ filters.max_area|default:'150' }}</output>
                     <div class="range-pair">
-                        <input type="range" min="30" max="120" step="1" value="{{ filters.min_area|default:'33' }}" data-filter-target="area-min-filter" aria-label="Maydon minimumi">
-                        <input type="range" min="30" max="120" step="1" value="{{ filters.max_area|default:'110' }}" data-filter-target="area-max-filter" aria-label="Maydon maksimumi">
+                        <input type="range" min="10" max="150" step="1" value="{{ filters.min_area|default:'10' }}" data-filter-target="area-min-filter" aria-label="Maydon minimumi">
+                        <input type="range" min="10" max="150" step="1" value="{{ filters.max_area|default:'150' }}" data-filter-target="area-max-filter" aria-label="Maydon maksimumi">
                     </div>
                     <input type="hidden" name="min_area" id="area-min-filter" value="{{ filters.min_area }}">
                     <input type="hidden" name="max_area" id="area-max-filter" value="{{ filters.max_area }}">
                 </div>
 
-                <div class="toolbar-range" id="price-range-label"><span data-i18n="priceLabel">Narx, so‘m</span> <output id="price-output">{{ filters.min_price|default:'350000000' }} — {{ filters.max_price|default:'1350000000' }}</output>
+                <div class="toolbar-range" id="price-range-label"><span data-i18n="priceLabel">Narx, so‘m</span> <output id="price-output">{{ filters.min_price|default:'350 mln' }} — {{ filters.max_price|default:'1,35 mlrd' }}</output>
                     <div class="range-pair">
                         <input type="range" min="0" max="1500000000" step="10000000" value="{{ filters.min_price|default:'350000000' }}" data-filter-target="price-min-filter" aria-label="Narx minimumi">
                         <input type="range" min="0" max="1500000000" step="10000000" value="{{ filters.max_price|default:'1350000000' }}" data-filter-target="price-max-filter" aria-label="Narx maksimumi">
@@ -1357,18 +1378,53 @@
             });
         });
 
-        const formatFilterNumber = (value) => Number(value).toLocaleString('uz-UZ');
+        const formatFilterNumber = (value) => {
+            const number = Number(value);
+            if (number >= 1000000000) {
+                return `${(number / 1000000000).toLocaleString('uz-UZ', { maximumFractionDigits: 2 })} mlrd`;
+            }
+            if (number >= 1000000) {
+                return `${(number / 1000000).toLocaleString('uz-UZ', { maximumFractionDigits: 2 })} mln`;
+            }
+            return number.toLocaleString('uz-UZ');
+        };
+        const priceOutput = document.getElementById('price-output');
+        const priceMinimumInitial = document.querySelector('[data-filter-target="price-min-filter"]');
+        const priceMaximumInitial = document.querySelector('[data-filter-target="price-max-filter"]');
+        if (priceOutput && priceMinimumInitial && priceMaximumInitial) {
+            priceOutput.textContent = `${formatFilterNumber(priceMinimumInitial.value)} — ${formatFilterNumber(priceMaximumInitial.value)}`;
+        }
         document.querySelectorAll('[data-filter-target]').forEach((range) => {
             range.addEventListener('input', () => {
                 const target = document.getElementById(range.dataset.filterTarget);
                 if (target) target.value = range.value;
 
-                if (range.dataset.filterTarget === 'floor-filter') {
-                    document.getElementById('floor-output').textContent = `${range.value}-qavat`;
+                if (range.dataset.filterTarget.startsWith('floor-')) {
+                    const minimum = document.querySelector('[data-filter-target="floor-min-filter"]');
+                    const maximum = document.querySelector('[data-filter-target="floor-max-filter"]');
+                    if (minimum && maximum) {
+                        if (range.dataset.filterTarget === 'floor-min-filter' && Number(minimum.value) > Number(maximum.value)) {
+                            minimum.value = maximum.value;
+                            document.getElementById('floor-min-filter').value = minimum.value;
+                        } else if (range.dataset.filterTarget === 'floor-max-filter' && Number(maximum.value) < Number(minimum.value)) {
+                            maximum.value = minimum.value;
+                            document.getElementById('floor-max-filter').value = maximum.value;
+                        }
+                        document.getElementById('floor-output').textContent = `${minimum.value} — ${maximum.value}`;
+                    }
                 } else if (range.dataset.filterTarget.startsWith('area-')) {
-                    const minimum = document.getElementById('area-min-filter').value || document.querySelector('[data-filter-target="area-min-filter"]').value;
-                    const maximum = document.getElementById('area-max-filter').value || document.querySelector('[data-filter-target="area-max-filter"]').value;
-                    document.getElementById('area-output').textContent = `${minimum} — ${maximum}`;
+                    const minimumRange = document.querySelector('[data-filter-target="area-min-filter"]');
+                    const maximumRange = document.querySelector('[data-filter-target="area-max-filter"]');
+                    if (minimumRange && maximumRange) {
+                        if (range.dataset.filterTarget === 'area-min-filter' && Number(minimumRange.value) > Number(maximumRange.value)) {
+                            minimumRange.value = maximumRange.value;
+                            document.getElementById('area-min-filter').value = minimumRange.value;
+                        } else if (range.dataset.filterTarget === 'area-max-filter' && Number(maximumRange.value) < Number(minimumRange.value)) {
+                            maximumRange.value = minimumRange.value;
+                            document.getElementById('area-max-filter').value = maximumRange.value;
+                        }
+                        document.getElementById('area-output').textContent = `${minimumRange.value} — ${maximumRange.value}`;
+                    }
                 } else {
                     const minimum = document.getElementById('price-min-filter').value || document.querySelector('[data-filter-target="price-min-filter"]').value;
                     const maximum = document.getElementById('price-max-filter').value || document.querySelector('[data-filter-target="price-max-filter"]').value;
@@ -1556,6 +1612,7 @@
         const apartmentCountNumber = document.getElementById('apartment-count-number') || document.querySelector('.apartment-count strong');
         const roomsFilter = document.getElementById('rooms-filter');
         const categorySelect = document.getElementById('apartment-category-select');
+        const projectSelect = document.getElementById('apartment-project-select');
         const availabilityFilter = document.getElementById('availability-filter');
         const clearFiltersLink = document.getElementById('clear-filters-link');
 
@@ -1626,6 +1683,12 @@
             });
         }
 
+        if (projectSelect) {
+            projectSelect.addEventListener('change', () => {
+                applyApartmentFilters();
+            });
+        }
+
         if (availabilityFilter) {
             availabilityFilter.addEventListener('change', () => {
                 applyApartmentFilters();
@@ -1652,20 +1715,22 @@
             clearFiltersLink.addEventListener('click', (event) => {
                 event.preventDefault();
                 if (categorySelect) categorySelect.value = 'all';
+                if (projectSelect) projectSelect.value = '';
                 if (availabilityFilter) availabilityFilter.value = '';
                 if (roomsFilter) roomsFilter.value = '';
                 document.querySelectorAll('#room-options .room-option').forEach((b, idx) => {
                     b.classList.toggle('is-selected', idx === 0);
                 });
-                const floorFilter = document.getElementById('floor-filter');
-                if (floorFilter) floorFilter.value = '';
-                const floorRange = document.querySelector('[data-filter-target="floor-filter"]');
-                if (floorRange) floorRange.value = '1';
+                const floorMin = document.getElementById('floor-min-filter');
+                const floorMax = document.getElementById('floor-max-filter');
+                if (floorMin) floorMin.value = '';
+                if (floorMax) floorMax.value = '';
+                const floorMinRange = document.querySelector('[data-filter-target="floor-min-filter"]');
+                const floorMaxRange = document.querySelector('[data-filter-target="floor-max-filter"]');
+                if (floorMinRange) floorMinRange.value = '1';
+                if (floorMaxRange) floorMaxRange.value = floorMaxRange.max;
                 const floorOut = document.getElementById('floor-output');
-                if (floorOut) {
-                    const dict = (typeof translations !== 'undefined' ? (translations[localStorage.getItem('xonsaroy-lang') || 'uz'] || translations.uz) : {});
-                    floorOut.textContent = dict.allLabel || 'Barchasi';
-                }
+                if (floorOut) floorOut.textContent = `1 — ${floorMaxRange ? floorMaxRange.max : 16}`;
 
                 const areaMin = document.getElementById('area-min-filter');
                 const areaMax = document.getElementById('area-max-filter');
@@ -1673,10 +1738,10 @@
                 if (areaMax) areaMax.value = '';
                 const areaMinRange = document.querySelector('[data-filter-target="area-min-filter"]');
                 const areaMaxRange = document.querySelector('[data-filter-target="area-max-filter"]');
-                if (areaMinRange) areaMinRange.value = '33';
-                if (areaMaxRange) areaMaxRange.value = '110';
+                if (areaMinRange) areaMinRange.value = '10';
+                if (areaMaxRange) areaMaxRange.value = '150';
                 const areaOut = document.getElementById('area-output');
-                if (areaOut) areaOut.textContent = '33 — 110';
+                if (areaOut) areaOut.textContent = '10 — 150';
 
                 const priceMin = document.getElementById('price-min-filter');
                 const priceMax = document.getElementById('price-max-filter');
@@ -1687,7 +1752,7 @@
                 if (priceMinRange) priceMinRange.value = '350000000';
                 if (priceMaxRange) priceMaxRange.value = '1350000000';
                 const priceOut = document.getElementById('price-output');
-                if (priceOut) priceOut.textContent = `${Number('350000000').toLocaleString('uz-UZ')} — ${Number('1350000000').toLocaleString('uz-UZ')}`;
+                if (priceOut) priceOut.textContent = `${formatFilterNumber('350000000')} — ${formatFilterNumber('1350000000')}`;
 
                 applyApartmentFilters();
             });

@@ -30,6 +30,35 @@ iframe {
     }
 }
 
+@media (min-width: 1101px) and (max-width: 1500px) {
+    .apartment-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px 10px;
+    }
+
+    .apartment-toolbar > :not(:first-child) {
+        border-left: 1px solid #eeedf0;
+        padding-left: 12px;
+    }
+
+    .apartment-toolbar > :nth-child(5),
+    .apartment-toolbar > :nth-child(6),
+    .apartment-toolbar > :nth-child(7),
+    .apartment-toolbar > :nth-child(8) {
+        border-top: 1px solid #eeedf0;
+        padding-top: 10px;
+    }
+
+    .apartment-toolbar > :nth-child(5) {
+        border-left: 0;
+        padding-left: 0;
+    }
+
+    .toolbar-actions {
+        justify-self: end;
+    }
+}
+
 @media (max-width: 760px) {
     .all-projects {
         min-height: 42px;
@@ -44,7 +73,9 @@ iframe {
     }
 
     .client-card {
-        flex-basis: calc((100% - 10px) / 2);
+        flex-basis: calc((100% - 12px) / 2);
+        height: auto;
+        aspect-ratio: 3 / 4;
     }
 
     .contact-form textarea {
@@ -55,7 +86,7 @@ iframe {
         min-height: 0;
         padding: 8px 16px 4px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) 90px 38px;
         align-items: center;
         gap: 6px 10px;
     }
@@ -74,7 +105,8 @@ iframe {
     .language-switch {
         grid-column: 2;
         grid-row: 1;
-        min-width: 38px;
+        width: 90px;
+        min-width: 90px;
         min-height: 36px;
         padding: 0 9px;
         display: inline-flex !important;
@@ -98,6 +130,7 @@ iframe {
         grid-column: 1;
         grid-row: 2;
         min-width: 0;
+        width: 100%;
         min-height: 38px;
         padding: 0 10px;
         font-size: 11px;
@@ -141,11 +174,11 @@ iframe {
         padding: 5px 0 8px;
         display: flex;
         flex: initial;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
-        gap: 6px 16px;
-        overflow: visible;
-        font-size: 11px;
+        gap: 6px 11px;
+        overflow-x: auto;
+        font-size: 10px;
         scrollbar-width: none;
     }
 
@@ -214,6 +247,11 @@ iframe {
     }
 
     .project-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .project-grid--paired,
+    .project-grid--single {
         grid-template-columns: minmax(0, 1fr);
     }
 

@@ -1,5 +1,5 @@
 {% if homes %}
-    <div class="project-grid">
+    <div class="project-grid{% if homes|length == 1 %} project-grid--single{% elif homes|length == 2 %} project-grid--paired{% endif %}">
         {% for home in homes %}
             <article class="project-card"
                      data-project-id="{{ home.id }}"

@@ -170,6 +170,15 @@ h1 {
     gap: 20px;
 }
 
+.project-grid--paired {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-grid--single {
+    grid-template-columns: minmax(0, 620px);
+    justify-content: center;
+}
+
 .project-card {
     min-width: 0;
     padding: 10px 10px 24px;
@@ -3439,9 +3448,9 @@ body {
 }
 
 .wide-section-heading h2 {
-    font-size: 50px;
+    font-size: 38px;
     line-height: 1.15;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .wide-section-heading p {
@@ -3488,6 +3497,8 @@ body {
 
 .clients-section {
     padding-top: 68px;
+    padding-right: clamp(20px, 3.5vw, 56px);
+    padding-left: clamp(20px, 3.5vw, 56px);
 }
 
 .client-grid {
@@ -3496,8 +3507,13 @@ body {
 
 .client-card {
     min-height: 0;
+    height: auto;
     aspect-ratio: 3 / 4;
-    flex-basis: calc((100% - 12px) / 2);
+    flex-basis: 42.5%;
+}
+
+.client-card img {
+    object-position: center 18%;
 }
 
 .client-card div {
@@ -3528,7 +3544,7 @@ body {
     }
 
     .wide-section-heading h2 {
-        font-size: 34px;
+        font-size: 29px;
     }
 
     .wide-section-heading p {
@@ -3550,7 +3566,8 @@ body {
     }
 
     .client-card {
-        flex-basis: min(80vw, 360px);
+        height: auto;
+        flex-basis: calc((100% - 12px) / 2);
     }
 }
 
@@ -3583,11 +3600,32 @@ body {
 }
 
 .apartment-toolbar {
+    display: grid;
+    grid-template-columns:
+        minmax(120px, .75fr)
+        minmax(110px, .65fr)
+        minmax(190px, 1fr)
+        minmax(220px, 1.15fr)
+        minmax(150px, .85fr)
+        minmax(205px, 1.1fr)
+        minmax(220px, 1.15fr)
+        auto;
+    align-items: center;
     min-height: 72px;
-    padding: 10px 14px;
-    justify-content: space-between;
-    gap: 14px;
-    box-shadow: 0 2px 8px rgba(23, 23, 25, .035);
+    padding: 12px 18px;
+    gap: 12px;
+    border: 1px solid #eeedf0;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(23, 23, 25, .045);
+}
+
+.apartment-toolbar > * {
+    min-width: 0;
+}
+
+.apartment-toolbar > :not(:first-child) {
+    border-left: 1px solid #eeedf0;
+    padding-left: 14px;
 }
 
 .toolbar-select,
@@ -3595,23 +3633,33 @@ body {
 .toolbar-range {
     min-width: 0;
     color: #5e5964;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .toolbar-select {
-    flex: 1 1 115px;
     display: grid;
-    gap: 5px;
+    gap: 7px;
+    color: #66616d;
 }
 
 .toolbar-select select {
     width: 100%;
     max-width: none;
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 26px 0 0;
+    border: 0;
+    background-color: transparent;
+    color: #17151a;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
 }
 
 .toolbar-rooms {
     display: grid;
-    gap: 6px;
+    gap: 7px;
 }
 
 .toolbar-label {
@@ -3619,31 +3667,42 @@ body {
 }
 
 .room-options {
-    gap: 4px;
+    flex-wrap: nowrap;
+    gap: 5px;
 }
 
 .room-option {
-    min-width: 30px;
-    height: 30px;
-    padding: 0 8px;
-    font-size: 11px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 9px;
+    border: 1px solid #e8e5eb;
+    background: #fff;
+    color: #27232c;
+    font-size: 12px;
+}
+
+.room-option.is-selected {
+    border-color: var(--plum);
+    background: #f3f0f7;
+    color: var(--plum);
 }
 
 .toolbar-range {
-    flex: 1 1 145px;
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 5px 10px;
+    gap: 8px 10px;
+    color: #66616d;
 }
 
 .toolbar-range output {
-    color: #77717e;
-    font-size: 10px;
+    color: #201d24;
+    font-size: 12px;
+    font-weight: 600;
     white-space: nowrap;
 }
 
-.toolbar-range input[type="range"] {
+.toolbar-range > input[type="range"] {
     width: 100%;
     height: 14px;
     grid-column: 1 / -1;
@@ -3656,13 +3715,66 @@ body {
 
 .range-pair {
     grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    position: relative;
+    height: 24px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
 }
 
 .range-pair input[type="range"] {
-    grid-column: auto;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 24px;
+    margin: 0;
+    appearance: none;
+    background: transparent;
+    pointer-events: none;
+}
+
+.range-pair::before {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 4px;
+    border-radius: 999px;
+    background: #ded8e8;
+    content: "";
+}
+
+.range-pair input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent;
+}
+
+.range-pair input[type="range"]::-moz-range-track {
+    height: 4px;
+    background: transparent;
+}
+
+.range-pair input[type="range"]::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    appearance: none;
+    border: 0;
+    border-radius: 50%;
+    background: var(--plum);
+    box-shadow: 0 2px 5px rgba(40, 30, 55, .25);
+    pointer-events: auto;
+    cursor: grab;
+}
+
+.range-pair input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--plum);
+    box-shadow: 0 2px 5px rgba(40, 30, 55, .25);
+    pointer-events: auto;
+    cursor: grab;
 }
 
 .toolbar-actions {
@@ -3690,9 +3802,17 @@ body {
 }
 
 .apartment-count {
-    margin: 10px 0 14px auto;
-    padding: 7px 11px;
-    font-size: 11px;
+    width: fit-content;
+    margin: 12px 0 16px auto;
+    padding: 10px 18px;
+    background: var(--plum);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.apartment-count strong {
+    margin-left: 5px;
 }
 
 .apartment-grid {
@@ -3737,18 +3857,18 @@ body {
 
 @media (max-width: 1100px) {
     .apartment-toolbar {
-        flex-wrap: wrap;
-        justify-content: flex-start;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .toolbar-select,
     .toolbar-rooms,
     .toolbar-range {
-        flex: 1 1 170px;
+        min-width: 0;
     }
 
     .toolbar-actions {
-        margin-left: auto;
+        grid-column: span 2;
+        justify-content: flex-end;
     }
 }
 
@@ -3762,14 +3882,29 @@ body {
     }
 
     .apartment-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         padding: 12px;
-        gap: 14px;
+        gap: 12px 8px;
+    }
+
+    .apartment-toolbar > :not(:first-child) {
+        border-left: 0;
+        padding-left: 0;
+    }
+
+    .apartment-toolbar > :nth-child(even) {
+        border-left: 1px solid #eeedf0;
+        padding-left: 10px;
     }
 
     .toolbar-select,
     .toolbar-rooms,
     .toolbar-range {
-        flex: 1 1 calc(50% - 14px);
+        width: 100%;
+    }
+
+    .toolbar-actions {
+        grid-column: 1 / -1;
     }
 
     .apartment-grid {
@@ -3784,15 +3919,12 @@ body {
 
 @media (max-width: 460px) {
     .apartment-toolbar {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: start;
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .toolbar-select,
-    .toolbar-range,
-    .toolbar-rooms {
-        width: 100%;
+    .apartment-toolbar > :nth-child(even) {
+        border-left: 0;
+        padding-left: 0;
     }
 
     .toolbar-actions {
