@@ -1623,6 +1623,11 @@
             if (filterAbortController) filterAbortController.abort();
             filterAbortController = new AbortController();
 
+            document.querySelectorAll('[data-filter-target]').forEach((range) => {
+                const target = document.getElementById(range.dataset.filterTarget);
+                if (target) target.value = range.value;
+            });
+
             const formData = new FormData(filterForm);
             const params = new URLSearchParams();
             for (const [key, value] of formData.entries()) {

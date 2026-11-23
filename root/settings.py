@@ -22,9 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env file
 load_dotenv(BASE_DIR / '.env')
-SITE_URL = os.getenv('SITE_URL', 'https://xonsaroy.uz').strip().rstrip('/')
+SITE_URL = os.getenv('SITE_URL', 'https://akbarshoh.pythonanywhere.com').strip().rstrip('/')
 if not SITE_URL:
-    SITE_URL = 'https://xonsaroy.uz'
+    SITE_URL = 'https://akbarshoh.pythonanywhere.com'
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')

@@ -483,7 +483,7 @@ def register_view(request):
 		form = UserRegisterForm(request.POST)
 		if form.is_valid():
 			user = form.save()
-			auth_login(request, user)
+			auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 			messages.success(request, 'Muvaffaqiyatli ro\'yxatdan o\'tdingiz!')
 			return redirect('home')
 	else:
@@ -498,7 +498,7 @@ def login_view(request):
 		form = UserLoginForm(request, data=request.POST)
 		if form.is_valid():
 			user = form.get_user()
-			auth_login(request, user)
+			auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 			messages.success(request, 'Xush kelibsiz!')
 			return redirect('home')
 	else:
@@ -645,7 +645,7 @@ def password_reset_request_view(request):
 				else:
 					messages.success(
 						request,
-						f"{email} manziliga 6 xonali kod yuborildi (Kod: {reset_code.code}). Kod 10 daqiqa davomida amal qiladi."
+						f"{email} manziliga tasdiqlash kodi yuborish uchun Telegram yoki Gmail xabarini tekshiring. Kod 10 daqiqa davomida amal qiladi."
 					)
 
 				return redirect('password_reset_confirm')
@@ -745,7 +745,7 @@ def password_reset_resend_view(request):
 	elif email_sent and is_live_smtp:
 		messages.success(request, 'Yangi 6 xonali tasdiqlash kodi Gmail pochtangizga yuborildi (10 daqiqa amal qiladi).')
 	else:
-		messages.success(request, f'Yangi tasdiqlash kodi: {reset_code.code} (10 daqiqa amal qiladi).')
+		messages.warning(request, 'Tasdiqlash kodini yuborib bo‘lmadi. Xatolikni tekshirib, qayta urinib ko‘ring.')
 
 	return redirect('password_reset_confirm')
 

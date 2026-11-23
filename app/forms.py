@@ -47,6 +47,12 @@ class UserProfileForm(forms.ModelForm):
 		if 'avatar' in self.fields:
 			self.fields['avatar'].required = False
 
+	def clean_telegram_id(self):
+		telegram_id = (self.cleaned_data.get('telegram_id') or '').strip()
+		if telegram_id and (not telegram_id.isdigit()):
+			raise forms.ValidationError('Telegram ID faqat raqamlardan iborat bo‘lishi kerak.')
+		return telegram_id or None
+
 
 class OptionalPasswordChangeForm(PasswordChangeForm):
 	def __init__(self, *args, **kwargs):

@@ -7,7 +7,7 @@ import requests
 import html
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-from app.models import Home, Apartment, SalesOffice, Material, Client, User, BotUser, Lead
+from app.models import Home, Apartment, SalesOffice, Material, Client, User, BotUser, Lead, Category
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,50 +23,50 @@ TEXTS = {
             "<b>Xon Saroy</b> kompaniyasining rasmiy axborot va konsultatsiya botiga xush kelibsiz!\n\n"
             "Bu yerda siz:\n"
             "• 🏢 <b>Xon Saroy</b> va uning afzalliklari haqida bilib olasiz\n"
-            "• 🏗 Zamonaviy <b>turar-joy majmualarimizni</b> ko‘rishingiz mumkin\n"
-            "• 🔑 Bo‘sh <b>xonadonlar, rejalari va narxlarini</b> ko‘rishingiz mumkin\n"
-            "• 🧮 0% <b>muddatli to‘lov va oylik to‘lovni</b> bir zumda hisoblashingiz mumkin\n"
+            "• 🏗 Zamonaviy <b>turar-joy majmualarimizni</b> ko'rishingiz mumkin\n"
+            "• 🔑 Bo'sh <b>xonadonlar, rejalari va narxlarini</b> ko'rishingiz mumkin\n"
+            "• 🧮 0% <b>muddatli to'lov va oylik to'lovni</b> bir zumda hisoblashingiz mumkin\n"
             "• 📍 Eng yaqin <b>sotuv ofislarimiz</b> manzillari va lokatsiyasini olasiz\n"
             "• 📞 1 daqiqada <b>bepul konsultatsiya</b> uchun ariza qoldirishingiz mumkin\n\n"
-            "Kerakli bo‘limni tanlang 👇"
+            "Kerakli bo'limni tanlang 👇"
         ),
         'menu_about': '🏢 Xon Saroy nima?',
         'menu_projects': '🏗 Loyihalarimiz',
         'menu_apartments': '🔑 Xonadonlar va Narxlar',
-        'menu_calc': '🧮 To‘lov kalkulyatori',
+        'menu_calc': '🧮 To\u2018lov kalkulyatori',
         'menu_offices': '📍 Sotuv ofislari',
         'menu_materials': '🧱 Sifat va Materiallar',
         'menu_reviews': '⭐ Mamnun mijozlar',
         'menu_consult': '📞 Konsultatsiya olish',
         'menu_profile': '👤 Mening profilim',
-        'menu_website': '🌐 Veb-saytga o‘tish',
-        'menu_lang': '🌐 Tilni o‘zgartirish',
+        'menu_website': '🌐 Veb-saytga o\u2018tish',
+        'menu_lang': '🌐 Tilni o\u2018zgartirish',
         'menu_admin': '📊 Admin panel',
         'btn_back': '⬅️ Asosiy menyu',
         'btn_share_contact': '📱 Telefon raqamimni yuborish',
         'about_text': (
             "🏢 <b>XON SAROY NIMA?</b>\n\n"
-            "<b>Xon Saroy</b> — O‘zbekiston ko‘chmas mulk bozorida mustahkam o‘ringa ega bo‘lgan, "
+            "<b>Xon Saroy</b> — O'zbekiston ko'chmas mulk bozorida mustahkam o'ringa ega bo'lgan, "
             "zamonaviy va nufuzli developerlik kompaniyasidir.\n\n"
-            "Biz shunchaki ko‘p qavatli binolar qurmaymiz, balki insonlar xavfsiz, xotirjam va "
+            "Biz shunchaki ko'p qavatli binolar qurmaymiz, balki insonlar xavfsiz, xotirjam va "
             "farovon yashaydigan <b>yangi hayot tarzini</b> yaratamiz.\n\n"
             "💎 <b>BIZNING USTUNLIKLARIMIZ:</b>\n\n"
             "🔹 <b>9 ballik seysmik chidamlilik:</b> Barcha majmualar eng yuqori mustahkamlik talablariga javob beruvchi monolit-karkas texnologiyasi asosida qad rostlaydi.\n\n"
-            "🔹 <b>Mukammal infratuzilma:</b> Yerosti avtoturargohlari, 24/7 qo‘riqlash va videokuzatuv xizmati, ekologik toza yashil hovlilar, bolalar va sport maydonchalari.\n\n"
-            "🔹 <b>Sifatli va ekologik materiallar:</b> Issiqlik va shovqin izolyatsiyasi yuqori pishiq g‘ishtlar, tejamkor panoramik oynalar va ovozsiz tezyurar liftlar.\n\n"
-            "🔹 <b>0% foizsiz muddatli to‘lov:</b> Boshlang‘ich to‘lov 15-20% dan boshlab, 36 oygacha qulay to‘lov jadvallari.\n\n"
-            "🔹 <b>Qonuniy kafolat:</b> Har bir xonadon to‘liq qonuniy kadastr hujjatlari bilan o‘z vaqtida topshiriladi."
+            "🔹 <b>Mukammal infratuzilma:</b> Yerosti avtoturargohlari, 24/7 qo'riqlash va videokuzatuv xizmati, ekologik toza yashil hovlilar, bolalar va sport maydonchalari.\n\n"
+            "🔹 <b>Sifatli va ekologik materiallar:</b> Issiqlik va shovqin izolyatsiyasi yuqori pishiq g'ishtlar, tejamkor panoramik oynalar va ovozsiz tezyurar liftlar.\n\n"
+            "🔹 <b>0% foizsiz muddatli to'lov:</b> Boshlang'ich to'lov 15-20% dan boshlab, 36 oygacha qulay to'lov jadvallari.\n\n"
+            "🔹 <b>Qonuniy kafolat:</b> Har bir xonadon to'liq qonuniy kadastr hujjatlari bilan o'z vaqtida topshiriladi."
         ),
         'consult_prompt': (
             "📞 <b>BEPUL KONSULTATSIYA OLISH</b>\n\n"
-            "Iltimos, telefon raqamingizni qoldiring. <b>Xon Saroy</b> mutaxassisi tez orada siz bilan bog‘lanib, "
+            "Iltimos, telefon raqamingizni qoldiring. <b>Xon Saroy</b> mutaxassisi tez orada siz bilan bog'lanib, "
             "barcha savollaringizga batafsil javob beradi va eng yaxshi takliflarni taqdim etadi.\n\n"
             "Quyidagi <b>«📱 Telefon raqamimni yuborish»</b> tugmasini bosing yoki raqamingizni yozib yuboring (masalan: +998901234567):"
         ),
         'lead_success': (
             "✅ <b>Rahmat, {name}!</b>\n\n"
-            "Arizangiz muvaffaqiyatli qabul qilindi. Tez orada <b>Xon Saroy</b> sotuv bo‘limi mutaxassisi "
-            "<b>{phone}</b> raqamingizga qo‘ng‘iroq qiladi."
+            "Arizangiz muvaffaqiyatli qabul qilindi. Tez orada <b>Xon Saroy</b> sotuv bo'limi mutaxassisi "
+            "<b>{phone}</b> raqamingizga qo'ng'iroq qiladi."
         ),
         'profile_text': (
             "👤 <b>SIZNING PROFILINGIZ:</b>\n\n"
@@ -76,34 +76,97 @@ TEXTS = {
             "🌐 <b>Tanlangan til:</b> {lang_name}\n\n"
             "{site_status}\n\n"
             "💡 <i>Eslatma: Telegram ID raqamingizni veb-saytdagi shaxsiy profilingizda kiritib, "
-            "hisoblaringizni o‘zaro bog‘lashingiz mumkin.</i>"
+            "hisoblaringizni o'zaro bog'lashingiz mumkin.</i>"
         ),
         'calc_intro': (
-            "🧮 <b>MUDDATLI TO‘LOV KALKULYATORI</b>\n\n"
-            "Xon Saroy majmualarida 0% foizsiz muddatli to‘lov asosida xonadon xarid qilishingiz mumkin!\n\n"
-            "Kerakli narx toifasini tanlang yoki o‘z summasini yozib yuboring 👇"
+            "🧮 <b>MUDDATLI TO'LOV KALKULYATORI</b>\n\n"
+            "Xon Saroy majmualarida 0% foizsiz muddatli to'lov asosida xonadon xarid qilishingiz mumkin!\n\n"
+            "Kerakli narx toifasini tanlang yoki o'z summasini yozib yuboring 👇"
         ),
         'calc_down_prompt': (
-            "💰 <b>Xonadon qiymati:</b> {price} so‘m\n\n"
-            "Endi <b>boshlang‘ich to‘lov</b> foizini tanlang 👇"
+            "💰 <b>Xonadon qiymati:</b> {price} so'm\n\n"
+            "Endi <b>boshlang'ich to'lov</b> foizini tanlang 👇"
         ),
         'calc_period_prompt': (
-            "💰 <b>Xonadon qiymati:</b> {price} so‘m\n"
-            "💳 <b>Boshlang‘ich to‘lov ({pct}%):</b> {down_sum} so‘m\n\n"
-            "Endi <b>to‘lov muddatini</b> tanlang 👇"
+            "💰 <b>Xonadon qiymati:</b> {price} so'm\n"
+            "💳 <b>Boshlang'ich to'lov ({pct}%):</b> {down_sum} so'm\n\n"
+            "Endi <b>to'lov muddatini</b> tanlang 👇"
         ),
         'calc_result': (
-            "🧮 <b>MUDDATLI TO‘LOV HISOB-KITOBI:</b>\n"
+            "🧮 <b>MUDDATLI TO'LOV HISOB-KITOBI:</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
-            "🏢 <b>Xonadon qiymati:</b> {price} so‘m\n"
-            "💳 <b>Boshlang‘ich to‘lov ({pct}%):</b> {down_sum} so‘m\n"
-            "📉 <b>Qolgan summa:</b> {rem_sum} so‘m\n"
-            "📅 <b>To‘lov muddati:</b> {period} oy\n"
-            "💵 <b>Oylik to‘lov:</b> <b>{monthly} so‘m/oy</b>\n"
+            "🏢 <b>Xonadon qiymati:</b> {price} so'm\n"
+            "💳 <b>Boshlang'ich to'lov ({pct}%):</b> {down_sum} so'm\n"
+            "📉 <b>Qolgan summa:</b> {rem_sum} so'm\n"
+            "📅 <b>To'lov muddati:</b> {period} oy\n"
+            "💵 <b>Oylik to'lov:</b> <b>{monthly} so'm/oy</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
-            "<i>* 0% foizsiz qulay muddatli to‘lov shartlari asosida hisoblandi.</i>\n\n"
-            "Ushbu shartlar bo‘yicha mutaxassis bilan bog‘lanmoqchimisiz?"
-        )
+            "<i>* 0% foizsiz qulay muddatli to'lov shartlari asosida hisoblandi.</i>\n\n"
+            "Ushbu shartlar bo'yicha mutaxassis bilan bog'lanmoqchimisiz?"
+        ),
+        # Apartment section
+        'apt_header': "🔑 <b>XONADONLAR VA NARXLAR</b>\n\n",
+        'apt_rooms_prompt': "Qanday xonadon qidiryapsiz? Xonalar sonini tanlang 👇",
+        'apt_all_rooms': '📋 Barcha xonadonlar',
+        'apt_room_btn': '{n} xonali',
+        'apt_filter_project': '🏗 Loyiha bo\u2018yicha',
+        'apt_count': "Jami <b>{count}</b> ta xonadon topildi:",
+        'apt_no_results': "Ushbu parametrlar bo'yicha hozircha xonadonlar topilmadi.",
+        'apt_card': (
+            "🏢 <b>{project}</b>\n"
+            "🚪 {rooms} xonali · 🏢 {floor}-qavat · 📐 {area} m²\n"
+            "💰 <b>{price} so'm</b>\n"
+            "{status_icon} {status_text}"
+        ),
+        'apt_detail_header': (
+            "🔑 <b>XONADON PASPORTI</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🏢 <b>Majmua:</b> {project}\n"
+            "🔢 <b>Xonadon raqami:</b> {unit}\n"
+            "🚪 <b>Xonalar soni:</b> {rooms} xonali\n"
+            "🏢 <b>Qavat:</b> {floor}-qavat\n"
+            "📐 <b>Umumiy maydon:</b> {area} m²\n"
+            "💰 <b>1 m² narxi:</b> ~{m2_price} so'm\n"
+            "🏷 <b>Umumiy narx:</b> <b>{price} so'm</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "💳 <b>Boshlang'ich to'lov (15%):</b> {down_15} so'm\n"
+            "📅 <b>Oylik to'lov (36 oy):</b> {monthly_36} so'm/oy\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🔑 <b>Holati:</b> {availability}\n"
+        ),
+        'apt_desc_prefix': "\n📝 <b>Tavsif:</b> {desc}\n",
+        'btn_calc_apt': '🧮 To\u2018lovni hisoblash',
+        'btn_book_apt': '📞 Ushbu xonadonni band qilish',
+        'btn_back_apts': '⬅️ Xonadonlar ro\u2018yxati',
+        'btn_apt_next': '➡️ Keyingi sahifa',
+        'btn_apt_prev': '⬅️ Oldingi sahifa',
+        'page_info': '📄 Sahifa {cur}/{total}',
+        'availability_available': '🟢 Bo\u2018sh',
+        'availability_reserved': '🟡 Bron qilingan',
+        'availability_sold': '🔴 Sotilgan',
+        'apt_unavailable': '🔒 Bu xonadon band',
+        # Projects section
+        'proj_header': "🏗 <b>BIZNING LOYIHALARIMIZ</b>\n\n",
+        'proj_filter_status': "Holat bo'yicha saralash:",
+        'proj_all': '📑 Barcha loyihalar',
+        'proj_in_progress': '🟡 Jarayonda',
+        'proj_completed': '🟢 Yakunlangan',
+        'proj_soon': '🟣 Tez kunda',
+        'proj_count': "{count} ta loyiha topildi.\nBatafsil ko'rish uchun loyihani tanlang 👇",
+        'proj_no_results': "Loyihalar topilmadi.",
+        'proj_detail': (
+            "🏢 <b>«{name}»</b>\n\n"
+            "📌 <b>Toifasi:</b> {category}\n"
+            "📊 <b>Holati:</b> {status}\n"
+            "🔑 <b>Mavjud xonadonlar:</b> {apt_count} ta\n\n"
+            "{description}\n"
+        ),
+        'btn_proj_apts': '🔑 Xonadonlarni ko\u2018rish ({count} ta)',
+        'btn_proj_consult': '📞 Ushbu loyiha uchun maslahat',
+        'btn_proj_back': '⬅️ Loyihalar ro\u2018yxati',
+        # Category filter
+        'cat_filter': '📂 Kategoriya bo\u2018yicha',
+        'cat_all': 'Barchasi',
     },
     'ru': {
         'welcome': (
@@ -188,7 +251,70 @@ TEXTS = {
             "━━━━━━━━━━━━━━━━━━━━\n"
             "<i>* Рассчитано по условиям беспроцентной рассрочки 0%.</i>\n\n"
             "Хотите забронировать эти условия у специалиста?"
-        )
+        ),
+        # Apartment section
+        'apt_header': "🔑 <b>КВАРТИРЫ И ЦЕНЫ</b>\n\n",
+        'apt_rooms_prompt': "Какую квартиру ищете? Выберите количество комнат 👇",
+        'apt_all_rooms': '📋 Все квартиры',
+        'apt_room_btn': '{n}-комнатная',
+        'apt_filter_project': '🏗 По проекту',
+        'apt_count': "Найдено <b>{count}</b> квартир:",
+        'apt_no_results': "По данным параметрам квартиры пока не найдены.",
+        'apt_card': (
+            "🏢 <b>{project}</b>\n"
+            "🚪 {rooms}-комн. · 🏢 {floor} этаж · 📐 {area} м²\n"
+            "💰 <b>{price} сум</b>\n"
+            "{status_icon} {status_text}"
+        ),
+        'apt_detail_header': (
+            "🔑 <b>КАРТОЧКА КВАРТИРЫ</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🏢 <b>Комплекс:</b> {project}\n"
+            "🔢 <b>Номер квартиры:</b> {unit}\n"
+            "🚪 <b>Количество комнат:</b> {rooms}-комнатная\n"
+            "🏢 <b>Этаж:</b> {floor}\n"
+            "📐 <b>Площадь:</b> {area} м²\n"
+            "💰 <b>Цена за 1 м²:</b> ~{m2_price} сум\n"
+            "🏷 <b>Общая стоимость:</b> <b>{price} сум</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "💳 <b>Первоначальный взнос (15%):</b> {down_15} сум\n"
+            "📅 <b>Ежемесячный платёж (36 мес.):</b> {monthly_36} сум/мес.\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🔑 <b>Статус:</b> {availability}\n"
+        ),
+        'apt_desc_prefix': "\n📝 <b>Описание:</b> {desc}\n",
+        'btn_calc_apt': '🧮 Рассчитать рассрочку',
+        'btn_book_apt': '📞 Забронировать эту квартиру',
+        'btn_back_apts': '⬅️ Список квартир',
+        'btn_apt_next': '➡️ Следующая',
+        'btn_apt_prev': '⬅️ Предыдущая',
+        'page_info': '📄 Страница {cur}/{total}',
+        'availability_available': '🟢 Свободна',
+        'availability_reserved': '🟡 Забронирована',
+        'availability_sold': '🔴 Продана',
+        'apt_unavailable': '🔒 Квартира недоступна',
+        # Projects section
+        'proj_header': "🏗 <b>НАШИ ПРОЕКТЫ</b>\n\n",
+        'proj_filter_status': "Фильтр по статусу:",
+        'proj_all': '📑 Все проекты',
+        'proj_in_progress': '🟡 Строящиеся',
+        'proj_completed': '🟢 Завершённые',
+        'proj_soon': '🟣 Скоро в продаже',
+        'proj_count': "Найдено {count} проектов.\nВыберите проект для подробной информации 👇",
+        'proj_no_results': "Проекты не найдены.",
+        'proj_detail': (
+            "🏢 <b>«{name}»</b>\n\n"
+            "📌 <b>Категория:</b> {category}\n"
+            "📊 <b>Статус:</b> {status}\n"
+            "🔑 <b>Доступно планировок:</b> {apt_count}\n\n"
+            "{description}\n"
+        ),
+        'btn_proj_apts': '🔑 Квартиры ({count})',
+        'btn_proj_consult': '📞 Консультация по проекту',
+        'btn_proj_back': '⬅️ Список проектов',
+        # Category filter
+        'cat_filter': '📂 По категории',
+        'cat_all': 'Все',
     },
     'en': {
         'welcome': (
@@ -274,7 +400,70 @@ TEXTS = {
             "━━━━━━━━━━━━━━━━━━━━\n"
             "<i>* Calculated under 0% interest-free terms.</i>\n\n"
             "Would you like to book this plan with a specialist?"
-        )
+        ),
+        # Apartment section
+        'apt_header': "🔑 <b>APARTMENTS & PRICES</b>\n\n",
+        'apt_rooms_prompt': "What apartment are you looking for? Select the number of rooms 👇",
+        'apt_all_rooms': '📋 All apartments',
+        'apt_room_btn': '{n}-bedroom',
+        'apt_filter_project': '🏗 By Project',
+        'apt_count': "Found <b>{count}</b> apartments:",
+        'apt_no_results': "No apartments found for this filter.",
+        'apt_card': (
+            "🏢 <b>{project}</b>\n"
+            "🚪 {rooms}-bed · 🏢 Floor {floor} · 📐 {area} m²\n"
+            "💰 <b>{price} UZS</b>\n"
+            "{status_icon} {status_text}"
+        ),
+        'apt_detail_header': (
+            "🔑 <b>APARTMENT DETAILS</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🏢 <b>Complex:</b> {project}\n"
+            "🔢 <b>Unit Number:</b> {unit}\n"
+            "🚪 <b>Rooms:</b> {rooms}-bedroom\n"
+            "🏢 <b>Floor:</b> {floor}\n"
+            "📐 <b>Area:</b> {area} m²\n"
+            "💰 <b>Price per m²:</b> ~{m2_price} UZS\n"
+            "🏷 <b>Total Price:</b> <b>{price} UZS</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "💳 <b>Down Payment (15%):</b> {down_15} UZS\n"
+            "📅 <b>Monthly (36 mos):</b> {monthly_36} UZS/mo\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "🔑 <b>Status:</b> {availability}\n"
+        ),
+        'apt_desc_prefix': "\n📝 <b>Description:</b> {desc}\n",
+        'btn_calc_apt': '🧮 Calculate installment',
+        'btn_book_apt': '📞 Book this apartment',
+        'btn_back_apts': '⬅️ Apartments list',
+        'btn_apt_next': '➡️ Next page',
+        'btn_apt_prev': '⬅️ Previous page',
+        'page_info': '📄 Page {cur}/{total}',
+        'availability_available': '🟢 Available',
+        'availability_reserved': '🟡 Reserved',
+        'availability_sold': '🔴 Sold',
+        'apt_unavailable': '🔒 Apartment unavailable',
+        # Projects section
+        'proj_header': "🏗 <b>OUR PROJECTS</b>\n\n",
+        'proj_filter_status': "Filter by status:",
+        'proj_all': '📑 All Projects',
+        'proj_in_progress': '🟡 Active',
+        'proj_completed': '🟢 Completed',
+        'proj_soon': '🟣 Coming Soon',
+        'proj_count': "Found {count} projects.\nSelect a project for details 👇",
+        'proj_no_results': "No projects found.",
+        'proj_detail': (
+            "🏢 <b>«{name}»</b>\n\n"
+            "📌 <b>Category:</b> {category}\n"
+            "📊 <b>Status:</b> {status}\n"
+            "🔑 <b>Available units:</b> {apt_count}\n\n"
+            "{description}\n"
+        ),
+        'btn_proj_apts': '🔑 View Apartments ({count})',
+        'btn_proj_consult': '📞 Consult for Project',
+        'btn_proj_back': '⬅️ Projects List',
+        # Category filter
+        'cat_filter': '📂 By Category',
+        'cat_all': 'All',
     }
 }
 
@@ -284,6 +473,9 @@ def fmt_sum(val):
         return f"{int(round(float(val))):,}".replace(',', ' ')
     except Exception:
         return str(val)
+
+
+APARTMENTS_PER_PAGE = 5
 
 
 # ---------------------------------------------------------------------------
@@ -302,7 +494,7 @@ class TelegramBot:
             resp = requests.post(url, data=data, files=files, timeout=35)
             return resp.json()
         except Exception:
-            logger.error("Telegram API so‘rovi bajarilmadi (%s).", method)
+            logger.error("Telegram API so'rovi bajarilmadi (%s).", method)
             return {'ok': False, 'description': 'Telegram API request failed.'}
 
     def send_message(self, chat_id, text, reply_markup=None, parse_mode='HTML'):
@@ -315,6 +507,18 @@ class TelegramBot:
         if reply_markup:
             data['reply_markup'] = json.dumps(reply_markup)
         return self.call_api('sendMessage', data)
+
+    def edit_message_text(self, chat_id, message_id, text, reply_markup=None, parse_mode='HTML'):
+        data = {
+            'chat_id': chat_id,
+            'message_id': message_id,
+            'text': text,
+            'parse_mode': parse_mode,
+            'disable_web_page_preview': True
+        }
+        if reply_markup:
+            data['reply_markup'] = json.dumps(reply_markup)
+        return self.call_api('editMessageText', data)
 
     def send_photo(self, chat_id, photo, caption=None, reply_markup=None, parse_mode='HTML'):
         data = {
@@ -330,9 +534,7 @@ class TelegramBot:
             resp = self.call_api('sendPhoto', data)
             if resp.get('ok'):
                 return resp
-            # If photo failed, fallback to send_message
             return self.send_message(chat_id, caption or '', reply_markup=reply_markup)
-
         elif isinstance(photo, str) and os.path.exists(photo):
             try:
                 with open(photo, 'rb') as f:
@@ -342,9 +544,16 @@ class TelegramBot:
             except Exception as e:
                 logger.error(f"Error reading photo {photo}: {e}")
             return self.send_message(chat_id, caption or '', reply_markup=reply_markup)
-
         else:
             return self.send_message(chat_id, caption or '', reply_markup=reply_markup)
+
+    def send_media_group(self, chat_id, media):
+        """Send a group of photos as an album."""
+        data = {
+            'chat_id': chat_id,
+            'media': json.dumps(media),
+        }
+        return self.call_api('sendMediaGroup', data)
 
     def send_location(self, chat_id, latitude, longitude, reply_markup=None):
         data = {
@@ -364,6 +573,9 @@ class TelegramBot:
             data['show_alert'] = True
         return self.call_api('answerCallbackQuery', data)
 
+    def delete_message(self, chat_id, message_id):
+        return self.call_api('deleteMessage', {'chat_id': chat_id, 'message_id': message_id})
+
     # -----------------------------------------------------------------------
     # USER & LANGUAGE HELPERS
     # -----------------------------------------------------------------------
@@ -382,7 +594,6 @@ class TelegramBot:
                 'language': 'uz'
             }
         )
-        # Update details if changed
         updated = False
         if bot_user.first_name != first_name:
             bot_user.first_name = first_name
@@ -415,6 +626,18 @@ class TelegramBot:
         lang = self.get_lang(chat_id)
         tmpl = TEXTS.get(lang, TEXTS['uz']).get(key, TEXTS['uz'].get(key, ''))
         return tmpl.format(**kwargs) if kwargs else tmpl
+
+    def get_availability_text(self, chat_id, availability):
+        lang = self.get_lang(chat_id)
+        mapping = {
+            'available': self.t(chat_id, 'availability_available'),
+            'reserved': self.t(chat_id, 'availability_reserved'),
+            'sold': self.t(chat_id, 'availability_sold'),
+        }
+        return mapping.get(availability, mapping['available'])
+
+    def get_availability_icon(self, availability):
+        return {'available': '🟢', 'reserved': '🟡', 'sold': '🔴'}.get(availability, '🟢')
 
     # -----------------------------------------------------------------------
     # KEYBOARDS
@@ -457,13 +680,13 @@ class TelegramBot:
     def handle_lang_prompt(self, chat_id):
         text = (
             "🌐 <b>Tilni tanlang / Выберите язык / Select language:</b>\n\n"
-            "🇺🇿 <b>O‘zbekcha</b> — O‘zbek tili\n"
+            "🇺🇿 <b>O'zbekcha</b> — O'zbek tili\n"
             "🇷🇺 <b>Русский</b> — Русский язык\n"
             "🇬🇧 <b>English</b> — English language"
         )
         kb = {
             'inline_keyboard': [
-                [{'text': '🇺🇿 O‘zbekcha', 'callback_data': 'set_lang_uz'}],
+                [{'text': "🇺🇿 O'zbekcha", 'callback_data': 'set_lang_uz'}],
                 [{'text': '🇷🇺 Русский', 'callback_data': 'set_lang_ru'}],
                 [{'text': '🇬🇧 English', 'callback_data': 'set_lang_en'}]
             ]
@@ -476,7 +699,7 @@ class TelegramBot:
     def handle_about(self, chat_id):
         text = self.t(chat_id, 'about_text')
         lang = self.get_lang(chat_id)
-        btn_projects = '🏗 Loyihalarni ko‘rish' if lang == 'uz' else ('🏗 Смотреть проекты' if lang == 'ru' else '🏗 View Projects')
+        btn_projects = '🏗 Loyihalarni ko\u2018rish' if lang == 'uz' else ('🏗 Смотреть проекты' if lang == 'ru' else '🏗 View Projects')
         btn_calc = '🧮 Kalkulyator' if lang == 'uz' else ('🧮 Калькулятор' if lang == 'ru' else '🧮 Calculator')
         btn_consult = '📞 Konsultatsiya olish' if lang == 'uz' else ('📞 Консультация' if lang == 'ru' else '📞 Consultation')
 
@@ -491,71 +714,60 @@ class TelegramBot:
         self.send_photo(chat_id, banner_url, caption=text, reply_markup=inline_kb)
 
     # -----------------------------------------------------------------------
-    # HANDLERS: PROJECTS
+    # HANDLERS: PROJECTS (improved with categories and images)
     # -----------------------------------------------------------------------
-    def handle_projects(self, chat_id, status_filter=None):
+    def handle_projects(self, chat_id, status_filter=None, category_filter=None):
         homes = Home.objects.select_related('category').order_by('id')
         if status_filter:
             homes = homes.filter(status=status_filter)
+        if category_filter:
+            homes = homes.filter(category_id=category_filter)
 
         lang = self.get_lang(chat_id)
-        titles = {
-            'uz': {
-                'in_progress': '🟡 Qurilayotgan loyihalar',
-                'completed': '🟢 Yakunlangan loyihalar',
-                'soon': '🟣 Tez kunda kutilayotgan loyihalar',
-                None: '🏗 Barcha loyihalarimiz'
-            },
-            'ru': {
-                'in_progress': '🟡 Строящиеся комплексы',
-                'completed': '🟢 Завершенные комплексы',
-                'soon': '🟣 Скоро в продаже',
-                None: '🏗 Все наши проекты'
-            },
-            'en': {
-                'in_progress': '🟡 Projects in Progress',
-                'completed': '🟢 Completed Projects',
-                'soon': '🟣 Coming Soon',
-                None: '🏗 All Projects'
-            }
-        }
-        title = titles.get(lang, titles['uz']).get(status_filter, '🏗 Loyihalarimiz')
         count = homes.count()
 
+        # Build header
+        text = self.t(chat_id, 'proj_header')
         if count == 0:
-            msg = "Loyihalar topilmadi." if lang == 'uz' else ("Проекты не найдены." if lang == 'ru' else "No projects found.")
-            self.send_message(chat_id, f"<b>{title}</b>: {msg}")
+            text += self.t(chat_id, 'proj_no_results')
+            self.send_message(chat_id, text)
             return
 
-        hint = (
-            f"<b>{title} ({count} ta):</b>\n\n"
-            f"Batafsil ma’lumot va bo‘sh xonadonlarni ko‘rish uchun loyihani tanlang 👇"
-            if lang == 'uz' else
-            f"<b>{title} ({count}):</b>\n\n"
-            f"Выберите проект для подробной информации и просмотра планировок 👇"
-            if lang == 'ru' else
-            f"<b>{title} ({count}):</b>\n\n"
-            f"Select a project to view details and floor plans 👇"
-        )
+        text += self.t(chat_id, 'proj_count', count=count)
 
+        # Status filter row
         filter_row = [
-            {'text': '🟡 Jarayonda' if lang == 'uz' else ('🟡 В процессе' if lang == 'ru' else '🟡 Active'), 'callback_data': 'filter_proj_in_progress'},
-            {'text': '🟢 Tayyor' if lang == 'uz' else ('🟢 Готовые' if lang == 'ru' else '🟢 Ready'), 'callback_data': 'filter_proj_completed'},
-            {'text': '🟣 Tez kunda' if lang == 'uz' else ('🟣 Скоро' if lang == 'ru' else '🟣 Soon'), 'callback_data': 'filter_proj_soon'}
+            {'text': self.t(chat_id, 'proj_in_progress'), 'callback_data': 'filter_proj_in_progress'},
+            {'text': self.t(chat_id, 'proj_completed'), 'callback_data': 'filter_proj_completed'},
+            {'text': self.t(chat_id, 'proj_soon'), 'callback_data': 'filter_proj_soon'}
         ]
-        all_row = [{'text': '📑 Barcha loyihalar' if lang == 'uz' else ('📑 Все проекты' if lang == 'ru' else '📑 All Projects'), 'callback_data': 'filter_proj_all'}]
+        all_row = [{'text': self.t(chat_id, 'proj_all'), 'callback_data': 'filter_proj_all'}]
 
+        # Category filter row
+        categories = Category.objects.all()
+        cat_buttons = []
+        if categories.exists():
+            cat_row = [{'text': self.t(chat_id, 'cat_all'), 'callback_data': 'filter_proj_cat_all'}]
+            for cat in categories:
+                cat_row.append({'text': cat.name, 'callback_data': f"filter_proj_cat_{cat.id}"})
+            cat_buttons = [cat_row]
+
+        # Project buttons — each with status icon
         project_buttons = []
         for h in homes:
             icon = '🟢' if h.status == 'completed' else ('🟡' if h.status == 'in_progress' else '🟣')
-            project_buttons.append([{'text': f"{icon} {h.name}", 'callback_data': f"proj_{h.id}"}])
+            apt_count = h.apartments.filter(is_active=True).count()
+            btn_text = f"{icon} {h.name}"
+            if apt_count > 0:
+                btn_text += f" ({apt_count})"
+            project_buttons.append([{'text': btn_text, 'callback_data': f"proj_{h.id}"}])
 
-        inline_kb = {'inline_keyboard': [filter_row, all_row] + project_buttons}
-        self.send_message(chat_id, hint, reply_markup=inline_kb)
+        inline_kb = {'inline_keyboard': [filter_row, all_row] + cat_buttons + project_buttons}
+        self.send_message(chat_id, text, reply_markup=inline_kb)
 
     def handle_project_detail(self, chat_id, project_id):
         try:
-            home = Home.objects.get(id=project_id)
+            home = Home.objects.select_related('category').get(id=project_id)
         except Home.DoesNotExist:
             self.send_message(chat_id, "Loyiha topilmadi.")
             return
@@ -569,41 +781,83 @@ class TelegramBot:
         idx = 0 if lang == 'uz' else (1 if lang == 'ru' else 2)
         st_text = status_names.get(home.status, (home.status, home.status, home.status))[idx]
 
-        category_name = home.category.name if home.category else ("Turar-joy majmuasi" if lang == 'uz' else "Жилой комплекс")
+        category_name = home.category.name if home.category else ("Turar-joy majmuasi" if lang == 'uz' else ("Жилой комплекс" if lang == 'ru' else "Residential Complex"))
         apts = home.apartments.filter(is_active=True)
         apt_count = apts.count()
+        default_desc = {
+            'uz': 'Zamonaviy arxitektura, qulay infratuzilma va yerosti avtoturargoh.',
+            'ru': 'Современная архитектура, развитая инфраструктура и подземный паркинг.',
+            'en': 'Modern architecture, developed infrastructure and underground parking.',
+        }
 
-        text = (
-            f"🏢 <b>«{home.name}»</b>\n\n"
-            f"📌 <b>Toifasi:</b> {category_name}\n"
-            f"📊 <b>Holati:</b> {st_text}\n"
-            f"🔑 <b>Mavjud xonadonlar:</b> {apt_count} ta reja\n\n"
-            f"{home.description or 'Zamonaviy arxitektura, qulay infratuzilma va yerosti avtoturargoh.'}\n"
+        # Price range
+        prices = list(apts.values_list('price', flat=True))
+        price_info = ""
+        if prices:
+            min_p = fmt_sum(min(prices))
+            max_p = fmt_sum(max(prices))
+            if lang == 'uz':
+                price_info = f"\n💰 <b>Narx oralig'i:</b> {min_p} — {max_p} so'm"
+            elif lang == 'ru':
+                price_info = f"\n💰 <b>Диапазон цен:</b> {min_p} — {max_p} сум"
+            else:
+                price_info = f"\n💰 <b>Price range:</b> {min_p} — {max_p} UZS"
+
+        # Room stats
+        room_counts = {}
+        for a in apts:
+            room_counts[a.rooms] = room_counts.get(a.rooms, 0) + 1
+        room_info = ""
+        if room_counts:
+            parts = []
+            for r in sorted(room_counts.keys()):
+                if lang == 'uz':
+                    parts.append(f"{r} xonali — {room_counts[r]} ta")
+                elif lang == 'ru':
+                    parts.append(f"{r}-комн. — {room_counts[r]}")
+                else:
+                    parts.append(f"{r}-bed — {room_counts[r]}")
+            room_info = "\n🚪 " + " | ".join(parts)
+
+        text = self.t(chat_id, 'proj_detail',
+            name=home.name,
+            category=category_name,
+            status=st_text,
+            apt_count=apt_count,
+            description=home.description or default_desc.get(lang, default_desc['uz'])
         )
-        if lang == 'ru':
-            text = (
-                f"🏢 <b>«{home.name}»</b>\n\n"
-                f"📌 <b>Категория:</b> {category_name}\n"
-                f"📊 <b>Статус:</b> {st_text}\n"
-                f"🔑 <b>Доступно планировок:</b> {apt_count}\n\n"
-                f"{home.description or 'Современная архитектура, развитая инфраструктура и подземный паркинг.'}\n"
-            )
+        text += price_info
+        text += room_info
 
-        btn_apts = f"🔑 Xonadonlarni ko‘rish ({apt_count} ta)" if lang == 'uz' else (f"🔑 Планировки ({apt_count})" if lang == 'ru' else f"🔑 View Apartments ({apt_count})")
-        btn_lead = "📞 Ushbu loyiha uchun maslahat" if lang == 'uz' else ("📞 Консультация по проекту" if lang == 'ru' else "📞 Consult for Project")
-        btn_back = "⬅️ Loyihalar ro‘yxati" if lang == 'uz' else ("⬅️ Список проектов" if lang == 'ru' else "⬅️ Projects List")
-
+        # Buttons
         inline_buttons = []
         if apt_count > 0:
-            inline_buttons.append([{'text': btn_apts, 'callback_data': f"apts_proj_{home.id}"}])
-        inline_buttons.append([{'text': btn_lead, 'callback_data': f"lead_proj_{home.id}"}])
-        inline_buttons.append([{'text': btn_back, 'callback_data': 'filter_proj_all'}])
+            # Room filter buttons for this project
+            room_row = []
+            for r in sorted(room_counts.keys()):
+                if lang == 'uz':
+                    label = f"{r} xonali ({room_counts[r]})"
+                elif lang == 'ru':
+                    label = f"{r}-комн. ({room_counts[r]})"
+                else:
+                    label = f"{r}-bed ({room_counts[r]})"
+                room_row.append({'text': label, 'callback_data': f"apts_proj_{home.id}_rm_{r}"})
+            # Split room_row into chunks of 3
+            for i in range(0, len(room_row), 3):
+                inline_buttons.append(room_row[i:i+3])
+
+            inline_buttons.append([{'text': self.t(chat_id, 'btn_proj_apts', count=apt_count), 'callback_data': f"apts_proj_{home.id}"}])
+
+        inline_buttons.append([{'text': self.t(chat_id, 'btn_proj_consult'), 'callback_data': f"lead_proj_{home.id}"}])
+        inline_buttons.append([{'text': self.t(chat_id, 'btn_proj_back'), 'callback_data': 'filter_proj_all'}])
 
         inline_kb = {'inline_keyboard': inline_buttons}
 
         img = None
         if home.hero_image and os.path.exists(home.hero_image.path):
             img = home.hero_image.path
+        elif home.hero_image_url:
+            img = home.hero_image_url
         elif home.image and os.path.exists(home.image.path):
             img = home.image.path
         elif home.image_url:
@@ -615,55 +869,157 @@ class TelegramBot:
             self.send_message(chat_id, text, reply_markup=inline_kb)
 
     # -----------------------------------------------------------------------
-    # HANDLERS: APARTMENTS
+    # HANDLERS: APARTMENTS (completely redesigned with pagination, room
+    #            filter, project filter, inline cards with images)
     # -----------------------------------------------------------------------
-    def handle_apartments(self, chat_id, rooms=None, project_id=None):
+    def _build_apartment_queryset(self, rooms=None, project_id=None, availability=None):
         apts = Apartment.objects.filter(is_active=True).select_related('project')
         if rooms:
             apts = apts.filter(rooms=rooms)
         if project_id:
             apts = apts.filter(project_id=project_id)
+        if availability:
+            apts = apts.filter(availability=availability)
+        return apts.order_by('sort_order', 'id')
 
-        count = apts.count()
+    def handle_apartments_menu(self, chat_id):
+        """Show room selection menu first, like the website's filter."""
+        lang = self.get_lang(chat_id)
+        text = self.t(chat_id, 'apt_header')
+        text += self.t(chat_id, 'apt_rooms_prompt')
+
+        # Get available room counts
+        room_stats = {}
+        for apt in Apartment.objects.filter(is_active=True).values('rooms'):
+            r = apt['rooms']
+            room_stats[r] = room_stats.get(r, 0) + 1
+        total = sum(room_stats.values())
+
+        # Build room filter buttons
+        room_buttons = []
+        for r in sorted(room_stats.keys()):
+            label = self.t(chat_id, 'apt_room_btn', n=r)
+            label += f" ({room_stats[r]})"
+            room_buttons.append({'text': label, 'callback_data': f"apts_rm_{r}_p1"})
+
+        # Split into rows of 2-3
+        button_rows = []
+        for i in range(0, len(room_buttons), 3):
+            button_rows.append(room_buttons[i:i+3])
+
+        # All apartments button
+        all_btn = [{'text': f"{self.t(chat_id, 'apt_all_rooms')} ({total})", 'callback_data': 'apts_all_p1'}]
+
+        # Project filter
+        projects = Home.objects.filter(apartments__is_active=True).distinct().order_by('name')
+        proj_buttons = []
+        for p in projects:
+            cnt = p.apartments.filter(is_active=True).count()
+            proj_buttons.append({'text': f"{p.name} ({cnt})", 'callback_data': f"apts_proj_{p.id}"})
+        proj_rows = []
+        for i in range(0, len(proj_buttons), 2):
+            proj_rows.append(proj_buttons[i:i+2])
+
+        # Availability filter
+        avail_row = []
+        for val, label_uz in [('available', '🟢'), ('reserved', '🟡')]:
+            cnt = Apartment.objects.filter(is_active=True, availability=val).count()
+            if cnt > 0:
+                lbl = self.get_availability_text(chat_id, val)
+                avail_row.append({'text': f"{lbl} ({cnt})", 'callback_data': f"apts_avail_{val}_p1"})
+
+        inline_kb = {'inline_keyboard': button_rows + [all_btn] + proj_rows}
+        if avail_row:
+            inline_kb['inline_keyboard'].append(avail_row)
+
+        self.send_message(chat_id, text, reply_markup=inline_kb)
+
+    def handle_apartments_list(self, chat_id, page=1, rooms=None, project_id=None, availability=None):
+        """Show paginated apartment list with inline cards."""
+        apts = self._build_apartment_queryset(rooms, project_id, availability)
+        total_count = apts.count()
         lang = self.get_lang(chat_id)
 
-        if count == 0:
-            msg = "Ushbu parametrlar bo‘yicha hozircha xonadonlar topilmadi." if lang == 'uz' else ("Квартир по данным параметрам пока не найдено." if lang == 'ru' else "No apartments found for this filter.")
-            self.send_message(chat_id, msg)
+        if total_count == 0:
+            text = self.t(chat_id, 'apt_header')
+            text += self.t(chat_id, 'apt_no_results')
+            back_btn = [{'text': '⬅️', 'callback_data': 'apts_menu'}]
+            self.send_message(chat_id, text, reply_markup={'inline_keyboard': [back_btn]})
             return
 
-        header = (
-            f"🔑 <b>Orzuyingizdagi xonadonni tanlang ({count} ta):</b>\n\n"
-            f"Rejasi va rasmini ko‘rish uchun kerakli xonadonni bosing 👇"
-            if lang == 'uz' else
-            f"🔑 <b>Квартиры и цены ({count}):</b>\n\n"
-            f"Нажмите на квартиру, чтобы посмотреть планировку и расчёт рассрочки 👇"
-            if lang == 'ru' else
-            f"🔑 <b>Apartments and Prices ({count}):</b>\n\n"
-            f"Click an apartment to view floor plan and payment calculation 👇"
-        )
+        total_pages = (total_count + APARTMENTS_PER_PAGE - 1) // APARTMENTS_PER_PAGE
+        page = max(1, min(page, total_pages))
+        offset = (page - 1) * APARTMENTS_PER_PAGE
+        page_apts = list(apts[offset:offset + APARTMENTS_PER_PAGE])
 
-        filter_row = [{'text': 'Barchasi', 'callback_data': 'apts_rm_all'}]
+        # Build filter suffix for callback
+        filter_suffix = ""
+        if rooms:
+            filter_suffix = f"_rm_{rooms}"
+        elif project_id:
+            filter_suffix = f"_proj_{project_id}"
+        elif availability:
+            filter_suffix = f"_avail_{availability}"
+        else:
+            filter_suffix = "_all"
 
-        apt_buttons = []
-        for a in apts[:10]:
-            p_name = a.project.name if a.project else "Xon Saroy"
-            price_str = fmt_sum(a.price)
+        # Header
+        text = self.t(chat_id, 'apt_header')
+        text += self.t(chat_id, 'apt_count', count=total_count) + "\n"
+        if total_pages > 1:
+            text += self.t(chat_id, 'page_info', cur=page, total=total_pages) + "\n"
+        text += "\n"
+
+        # Apartment cards inline
+        for apt in page_apts:
+            p_name = apt.project.name if apt.project else "Xon Saroy"
+            avail_text = self.get_availability_text(chat_id, apt.availability)
+            avail_icon = self.get_availability_icon(apt.availability)
+            text += self.t(chat_id, 'apt_card',
+                project=p_name,
+                rooms=apt.rooms,
+                floor=apt.floor,
+                area=apt.area,
+                price=fmt_sum(apt.price),
+                status_icon=avail_icon,
+                status_text=avail_text
+            )
+            unit_label = apt.unit_number or f"#{apt.id}"
+            text += f" · <code>{unit_label}</code>\n\n"
+
+        # Build inline buttons — each apartment detail button
+        buttons = []
+        for apt in page_apts:
+            p_name = apt.project.name if apt.project else "Xon Saroy"
+            unit_label = apt.unit_number or f"#{apt.id}"
             if lang == 'uz':
-                status = {'available': 'Bo‘sh', 'reserved': 'Bron', 'sold': 'Band'}.get(a.availability, 'Bo‘sh')
+                btn_text = f"📋 {p_name} · {apt.rooms}x · {apt.area}m² · {unit_label}"
             elif lang == 'ru':
-                status = {'available': 'Свободна', 'reserved': 'Бронь', 'sold': 'Заблокирована'}.get(a.availability, 'Свободна')
+                btn_text = f"📋 {p_name} · {apt.rooms}к · {apt.area}м² · {unit_label}"
             else:
-                status = {'available': 'Available', 'reserved': 'Reserved', 'sold': 'Unavailable'}.get(a.availability, 'Available')
-            btn_title = f"{p_name}: {a.rooms}-xona, {a.area} m² — {price_str} so‘m · {status}"
-            apt_buttons.append([{'text': btn_title, 'callback_data': f"apt_detail_{a.id}"}])
+                btn_text = f"📋 {p_name} · {apt.rooms}bd · {apt.area}m² · {unit_label}"
+            buttons.append([{'text': btn_text, 'callback_data': f"apt_detail_{apt.id}"}])
 
-        inline_kb = {'inline_keyboard': [filter_row] + apt_buttons}
-        self.send_message(chat_id, header, reply_markup=inline_kb)
+        # Pagination
+        nav_row = []
+        if page > 1:
+            nav_row.append({'text': self.t(chat_id, 'btn_apt_prev'), 'callback_data': f"aptpage{filter_suffix}_p{page-1}"})
+        if page < total_pages:
+            nav_row.append({'text': self.t(chat_id, 'btn_apt_next'), 'callback_data': f"aptpage{filter_suffix}_p{page+1}"})
+        if nav_row:
+            buttons.append(nav_row)
+
+        # Back to filter menu
+        buttons.append([{'text': '🔍 ' + (
+            'Filtrni o\u2018zgartirish' if lang == 'uz' else ('Изменить фильтр' if lang == 'ru' else 'Change filter')
+        ), 'callback_data': 'apts_menu'}])
+
+        inline_kb = {'inline_keyboard': buttons}
+        self.send_message(chat_id, text, reply_markup=inline_kb)
 
     def handle_apartment_detail(self, chat_id, apt_id):
         try:
-            apt = Apartment.objects.select_related('project').get(id=apt_id)
+            apt = Apartment.objects.select_related('project', 'project__category').get(id=apt_id)
         except Apartment.DoesNotExist:
             self.send_message(chat_id, "Xonadon topilmadi.")
             return
@@ -672,55 +1028,62 @@ class TelegramBot:
         proj_name = apt.project.name if apt.project else "Xon Saroy"
         total_price = fmt_sum(apt.price)
         m2_price = fmt_sum(round(float(apt.price) / float(apt.area))) if apt.area else '0'
+        down_15 = fmt_sum(round(float(apt.price) * 0.15))
+        monthly_36 = fmt_sum(round(float(apt.price) * 0.85 / 36))
+        unit_label = apt.unit_number or f"#{apt.id}"
 
-        text = (
-            f"🔑 <b>XONADON PASPORTI:</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🏢 <b>Majmua:</b> {proj_name}\n"
-            f"🚪 <b>Xonalar soni:</b> {apt.rooms} xonali\n"
-            f"🏢 <b>Qavat:</b> {apt.floor}-qavat\n"
-            f"📐 <b>Umumiy maydon:</b> {apt.area} m²\n"
-            f"💰 <b>1 m² narxi:</b> ~{m2_price} so‘m\n"
-            f"🏷 <b>Umumiy narx:</b> <b>{total_price} so‘m</b>\n"
-            f"🔑 <b>Holati:</b> {('Bo‘sh' if apt.availability == 'available' else 'Bron qilingan' if apt.availability == 'reserved' else 'Band')}\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"<i>* 0% foizsiz muddatli to‘lov imkoniyati mavjud.</i>"
+        avail_text = self.get_availability_text(chat_id, apt.availability)
+
+        text = self.t(chat_id, 'apt_detail_header',
+            project=proj_name,
+            unit=unit_label,
+            rooms=apt.rooms,
+            floor=apt.floor,
+            area=apt.area,
+            m2_price=m2_price,
+            price=total_price,
+            down_15=down_15,
+            monthly_36=monthly_36,
+            availability=avail_text
         )
-        if lang == 'ru':
-            text = (
-                f"🔑 <b>КАРТОЧКА КВАРТИРЫ:</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━\n"
-                f"🏢 <b>Комплекс:</b> {proj_name}\n"
-                f"🚪 <b>Количество комнат:</b> {apt.rooms}-комнатная\n"
-                f"🏢 <b>Этаж:</b> {apt.floor}-этаж\n"
-                f"📐 <b>Площадь:</b> {apt.area} м²\n"
-                f"💰 <b>Цена за 1 м²:</b> ~{m2_price} сум\n"
-                f"🏷 <b>Общая стоимость:</b> <b>{total_price} сум</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━\n"
-                f"<i>* Доступна беспроцентная рассрочка 0%.</i>"
-            )
 
-        btn_calc = '🧮 Ushbu xonadon to‘lovini hisoblash' if lang == 'uz' else '🧮 Рассчитать рассрочку для квартиры'
-        btn_book = '📞 Ushbu xonadonni band qilish' if lang == 'uz' else '📞 Забронировать эту квартиру'
-        btn_back = '⬅️ Xonadonlar ro‘yxati' if lang == 'uz' else '⬅️ Список квартир'
+        if apt.description:
+            text += self.t(chat_id, 'apt_desc_prefix', desc=apt.description)
 
-        inline_kb = {
-            'inline_keyboard': [
-                [{'text': btn_calc, 'callback_data': f"calc_apt_{apt.id}"}],
-                ([{'text': btn_book, 'callback_data': f"book_apt_{apt.id}"}]
-                 if apt.availability == 'available' else
-                 [{'text': ('🔒 Bu xonadon band' if lang == 'uz' else '🔒 This apartment is unavailable'),
-                   'callback_data': 'apts_rm_all'}]),
-                [{'text': btn_back, 'callback_data': 'apts_rm_all'}],
-            ]
-        }
+        # Buttons
+        inline_buttons = [
+            [{'text': self.t(chat_id, 'btn_calc_apt'), 'callback_data': f"calc_apt_{apt.id}"}],
+        ]
+        if apt.availability == 'available':
+            inline_buttons.append([{'text': self.t(chat_id, 'btn_book_apt'), 'callback_data': f"book_apt_{apt.id}"}])
+        else:
+            inline_buttons.append([{'text': self.t(chat_id, 'apt_unavailable'), 'callback_data': 'noop'}])
 
-        # Check plan image
+        # Website link for this apartment
+        site_url = getattr(settings, 'SITE_URL', 'https://akbarshoh.pythonanywhere.com').rstrip('/')
+        inline_buttons.append([
+            {'text': '🌐 ' + ('Saytda ko\u2018rish' if lang == 'uz' else ('Смотреть на сайте' if lang == 'ru' else 'View on website')),
+             'url': f"{site_url}/#apartments"}
+        ])
+        inline_buttons.append([{'text': self.t(chat_id, 'btn_back_apts'), 'callback_data': 'apts_menu'}])
+
+        inline_kb = {'inline_keyboard': inline_buttons}
+
+        # Try to send with image
         img = None
         if apt.image and os.path.exists(apt.image.path):
             img = apt.image.path
         elif apt.image_url:
             img = apt.image_url
+        elif apt.project:
+            if apt.project.hero_image and os.path.exists(apt.project.hero_image.path):
+                img = apt.project.hero_image.path
+            elif apt.project.hero_image_url:
+                img = apt.project.hero_image_url
+            elif apt.project.image and os.path.exists(apt.project.image.path):
+                img = apt.project.image.path
+            elif apt.project.image_url:
+                img = apt.project.image_url
 
         if img:
             self.send_photo(chat_id, img, caption=text, reply_markup=inline_kb)
@@ -732,15 +1095,42 @@ class TelegramBot:
     # -----------------------------------------------------------------------
     def handle_calc_start(self, chat_id, default_price=None):
         text = self.t(chat_id, 'calc_intro')
-        inline_kb = {
-            'inline_keyboard': [
-                [{'text': '350 000 000 so‘m', 'callback_data': 'calc_pr_350000000'},
-                 {'text': '500 000 000 so‘m', 'callback_data': 'calc_pr_500000000'}],
-                [{'text': '700 000 000 so‘m', 'callback_data': 'calc_pr_700000000'},
-                 {'text': '1 000 000 000 so‘m', 'callback_data': 'calc_pr_1000000000'}],
-                [{'text': '✏️ O‘z summangizni yozish', 'callback_data': 'calc_pr_custom'}]
+        lang = self.get_lang(chat_id)
+
+        # Get real price ranges from apartments
+        apts_prices = list(Apartment.objects.filter(is_active=True).values_list('price', flat=True).order_by('price'))
+        price_buttons = []
+        if apts_prices:
+            # Show min, median and max as quick picks
+            min_price = int(apts_prices[0])
+            max_price = int(apts_prices[-1])
+            mid_price = int(apts_prices[len(apts_prices)//2])
+
+            seen = set()
+            for p in [min_price, mid_price, max_price]:
+                rounded = round(p, -6)  # round to nearest million
+                if rounded > 0 and rounded not in seen:
+                    seen.add(rounded)
+                    price_buttons.append({'text': f"{fmt_sum(rounded)} so'm", 'callback_data': f"calc_pr_{rounded}"})
+
+        # Fallback standard prices
+        if len(price_buttons) < 2:
+            price_buttons = [
+                {'text': '350 000 000 so\'m', 'callback_data': 'calc_pr_350000000'},
+                {'text': '500 000 000 so\'m', 'callback_data': 'calc_pr_500000000'},
+                {'text': '700 000 000 so\'m', 'callback_data': 'calc_pr_700000000'},
+                {'text': '1 000 000 000 so\'m', 'callback_data': 'calc_pr_1000000000'},
             ]
-        }
+
+        # Split into rows of 2
+        btn_rows = []
+        for i in range(0, len(price_buttons), 2):
+            btn_rows.append(price_buttons[i:i+2])
+        custom_label = "✏️ O'z summasini yozish" if lang == 'uz' else ("✏️ Ввести свою сумму" if lang == 'ru' else "✏️ Enter custom amount")
+        btn_rows.append([{'text': custom_label, 'callback_data': 'calc_pr_custom'}])
+
+        inline_kb = {'inline_keyboard': btn_rows}
+
         if default_price:
             self.handle_calc_select_down(chat_id, float(default_price))
         else:
@@ -756,7 +1146,8 @@ class TelegramBot:
                  {'text': '20%', 'callback_data': 'calc_down_20'}],
                 [{'text': '30%', 'callback_data': 'calc_down_30'},
                  {'text': '50%', 'callback_data': 'calc_down_50'}],
-                [{'text': '🔄 Boshqa summa tanlash', 'callback_data': 'calc_start'}]
+                [{'text': '🔄 ' + ('Boshqa summa' if self.get_lang(chat_id) == 'uz' else ('Другая сумма' if self.get_lang(chat_id) == 'ru' else 'Other amount')),
+                  'callback_data': 'calc_start'}]
             ]
         }
         self.send_message(chat_id, text, reply_markup=inline_kb)
@@ -774,7 +1165,8 @@ class TelegramBot:
                  {'text': '24 oy (2 yil)', 'callback_data': 'calc_per_24'}],
                 [{'text': '36 oy (3 yil)', 'callback_data': 'calc_per_36'},
                  {'text': '48 oy (4 yil)', 'callback_data': 'calc_per_48'}],
-                [{'text': '⬅️ Boshlang‘ich to‘lovni o‘zgartirish', 'callback_data': f"calc_pr_{int(price)}"}]
+                [{'text': "⬅️ Boshlang'ich to'lovni o'zgartirish" if self.get_lang(chat_id) == 'uz' else '⬅️ Изменить первоначальный взнос',
+                  'callback_data': f"calc_pr_{int(price)}"}]
             ]
         }
         self.send_message(chat_id, text, reply_markup=inline_kb)
@@ -797,16 +1189,18 @@ class TelegramBot:
             monthly=fmt_sum(monthly)
         )
 
-        note_data = f"Kalkulyator hisobi: Narx={fmt_sum(price)} so'm, Boshlang'ich={pct}% ({fmt_sum(down_sum)} so'm), Muddat={period} oy, Oylik={fmt_sum(monthly)} so'm/oy"
+        note_data = f"Kalkulyator: Narx={fmt_sum(price)}, Boshlang'ich={pct}% ({fmt_sum(down_sum)}), Muddat={period} oy, Oylik={fmt_sum(monthly)}"
         self.user_states[chat_id] = {'state': 'awaiting_contact', 'note': note_data}
 
         lang = self.get_lang(chat_id)
-        btn_consult = '📞 Ushbu shartlarda ariza qoldirish' if lang == 'uz' else '📞 Оставить заявку на этих условиях'
-        btn_restart = '🔄 Qaytadan hisoblash' if lang == 'uz' else '🔄 Рассчитать заново'
+        btn_consult = '📞 Ushbu shartlarda ariza qoldirish' if lang == 'uz' else ('📞 Оставить заявку' if lang == 'ru' else '📞 Apply with these terms')
+        btn_restart = '🔄 Qaytadan hisoblash' if lang == 'uz' else ('🔄 Рассчитать заново' if lang == 'ru' else '🔄 Recalculate')
+        btn_apts = '🔑 Xonadonlarni ko\u2018rish' if lang == 'uz' else ('🔑 Смотреть квартиры' if lang == 'ru' else '🔑 View apartments')
 
         inline_kb = {
             'inline_keyboard': [
                 [{'text': btn_consult, 'callback_data': 'req_consult'}],
+                [{'text': btn_apts, 'callback_data': 'apts_menu'}],
                 [{'text': btn_restart, 'callback_data': 'calc_start'}]
             ]
         }
@@ -820,7 +1214,7 @@ class TelegramBot:
         lang = self.get_lang(chat_id)
 
         if not offices.exists():
-            msg = "Sotuv ofislari ma’lumotlari tez orada joylashtiriladi." if lang == 'uz' else "Информация об офисах продаж скоро появится."
+            msg = "Sotuv ofislari ma'lumotlari tez orada joylashtiriladi." if lang == 'uz' else ("Информация скоро появится." if lang == 'ru' else "Sales office info coming soon.")
             self.send_message(chat_id, msg)
             return
 
@@ -830,18 +1224,22 @@ class TelegramBot:
             "🕒 <b>Ish vaqti:</b> Har kuni 09:00 dan 19:00 gacha dam olish kunlarisiz.\n\n"
             if lang == 'uz' else
             "📍 <b>ОФИСЫ ПРОДАЖ XON SAROY:</b>\n\n"
-            "Будем рады видеть вас в наших комфортабельных офисах продаж!\n"
-            "🕒 <b>График работы:</b> Ежедневно с 09:00 до 19:00 без выходных.\n\n"
+            "Будем рады видеть вас в наших офисах продаж!\n"
+            "🕒 <b>Часы работы:</b> Ежедневно с 09:00 до 19:00 без выходных.\n\n"
+            if lang == 'ru' else
+            "📍 <b>XON SAROY SALES OFFICES:</b>\n\n"
+            "We welcome you at our comfortable sales offices!\n"
+            "🕒 <b>Working hours:</b> Every day 09:00 — 19:00, no days off.\n\n"
         )
 
         inline_buttons = []
         for idx, o in enumerate(offices, 1):
             text += f"🏢 <b>{idx}. {o.name}</b>\n📍 {o.address}\n\n"
             if o.latitude and o.longitude:
-                btn_name = f"📍 {o.name} lokatsiyasi" if lang == 'uz' else f"📍 Локация: {o.name}"
+                btn_name = f"📍 {o.name}" + (" lokatsiyasi" if lang == 'uz' else (" локация" if lang == 'ru' else " location"))
                 inline_buttons.append([{'text': btn_name, 'callback_data': f"office_loc_{o.id}"}])
 
-        btn_consult = '📞 Ofisga qo‘ng‘iroq buyurtma qilish' if lang == 'uz' else '📞 Заказать звонок из офиса'
+        btn_consult = "📞 " + ("Ofisga qo'ng'iroq" if lang == 'uz' else ("Заказать звонок" if lang == 'ru' else "Request a call"))
         inline_buttons.append([{'text': btn_consult, 'callback_data': 'req_consult'}])
 
         inline_kb = {'inline_keyboard': inline_buttons}
@@ -876,29 +1274,39 @@ class TelegramBot:
 
         text = (
             "🧱 <b>XON SAROY SIFAT STANDARTLARI VA MATERIALLAR:</b>\n\n"
-            "Kompaniyamiz qurilishda jahon standartlariga mos, sertifikatlangan va laboratoriya nazoratidan o‘tgan xomashyolardan foydalanadi:\n\n"
+            "Kompaniyamiz qurilishda jahon standartlariga mos, sertifikatlangan va laboratoriya nazoratidan o'tgan xomashyolardan foydalanadi:\n\n"
             "🏗 <b>Monolit karkas:</b> 9 ballik zilzilaga bardoshli poydevor va ustunlar.\n"
-            "🧱 <b>Pishiq g‘isht va gazoblok:</b> Ekologik toza, qishda issiq, yozda salqin saqlovchi energiya tejamkor devorlar.\n"
+            "🧱 <b>Pishiq g'isht va gazoblok:</b> Ekologik toza, qishda issiq, yozda salqin saqlovchi energiya tejamkor devorlar.\n"
             "🪟 <b>Panoramik romlar:</b> Shovqin va changdan ishonchli himoyalovchi sifatli oynalar.\n"
-            "🛗 <b>Tezyurar liftlar:</b> Shovqinsiz, xavfsiz va yuqori yuk ko‘tarish quvvatiga ega liftlar.\n\n"
+            "🛗 <b>Tezyurar liftlar:</b> Shovqinsiz, xavfsiz va yuqori yuk ko'tarish quvvatiga ega liftlar.\n\n"
             if lang == 'uz' else
-            "🧱 <b>СТАНДАРТЫ КАЧЕСТВА И МАТЕРИАЛЫ XON SAROY:</b>\n\n"
-            "Все наши объекты строятся исключительно из сертифицированных и проверенных материалов:\n\n"
+            "🧱 <b>СТАНДАРТЫ КАЧЕСТВА XON SAROY:</b>\n\n"
+            "Все объекты строятся из сертифицированных материалов:\n\n"
             "🏗 <b>Монолитный каркас:</b> Сейсмостойкость до 9 баллов.\n"
-            "🧱 <b>Жженый кирпич и газоблок:</b> Энергоэффективные стены — тепло зимой и прохладно летом.\n"
+            "🧱 <b>Жженый кирпич и газоблок:</b> Энергоэффективные стены.\n"
             "🪟 <b>Панорамные окна:</b> Высокая шумо- и теплоизоляция.\n"
-            "🛗 <b>Бесшумные скоростные лифты:</b> Максимальная безопасность и надежность.\n\n"
+            "🛗 <b>Бесшумные скоростные лифты:</b> Безопасность и надежность.\n\n"
+            if lang == 'ru' else
+            "🧱 <b>XON SAROY QUALITY STANDARDS:</b>\n\n"
+            "All projects use certified, lab-tested materials:\n\n"
+            "🏗 <b>Monolithic frame:</b> 9-point seismic resistance.\n"
+            "🧱 <b>Premium brickwork:</b> Energy-efficient insulated walls.\n"
+            "🪟 <b>Panoramic windows:</b> Superior noise & thermal insulation.\n"
+            "🛗 <b>High-speed elevators:</b> Silent, safe, reliable.\n\n"
         )
 
         for idx, m in enumerate(materials, 1):
             text += f"• <b>{m.title}</b>\n"
 
-        btn_consult = '📞 Sifat bo‘yicha maslahat olish' if lang == 'uz' else '📞 Консультация по качеству'
+        btn_consult = "📞 " + ("Sifat haqida maslahat" if lang == 'uz' else ("Консультация" if lang == 'ru' else "Quality consultation"))
         inline_kb = {'inline_keyboard': [[{'text': btn_consult, 'callback_data': 'req_consult'}]]}
 
-        first_mat = materials.first()
-        if first_mat and first_mat.image_url:
-            self.send_photo(chat_id, first_mat.image_url, caption=text, reply_markup=inline_kb)
+        # Send material images as album if available
+        mat_images = [m for m in materials if (m.image and os.path.exists(m.image.path)) or m.image_url]
+        if mat_images:
+            first = mat_images[0]
+            img = first.image_url if first.image_url else first.image.path
+            self.send_photo(chat_id, img, caption=text, reply_markup=inline_kb)
         else:
             self.send_message(chat_id, text, reply_markup=inline_kb)
 
@@ -911,22 +1319,28 @@ class TelegramBot:
 
         text = (
             "⭐ <b>BIZGA ISHONCH BILDIRGAN MIJOZLARIMIZ:</b>\n\n"
-            "Minglab oilalar Xon Saroy majmualarida o‘z orzularidagi xonadonlarga ega bo‘lishdi. "
+            "Minglab oilalar Xon Saroy majmualarida o'z orzularidagi xonadonlarga ega bo'lishdi. "
             "Biz har bir mijozning ishonchini yuksak qadrlaymiz!\n\n"
             if lang == 'uz' else
-            "⭐ <b>ОТЗЫВЫ НАШИХ ДОВОЛЬНЫХ КЛИЕНТОВ:</b>\n\n"
-            "Тысячи семей уже выбрали жилые комплексы Xon Saroy и счастливо живут в своих квартирах!\n\n"
+            "⭐ <b>ОТЗЫВЫ НАШИХ КЛИЕНТОВ:</b>\n\n"
+            "Тысячи семей уже выбрали Xon Saroy!\n\n"
+            if lang == 'ru' else
+            "⭐ <b>OUR HAPPY CLIENTS:</b>\n\n"
+            "Thousands of families have chosen Xon Saroy!\n\n"
         )
 
         for c in clients:
             text += f"✨ <b>{c.name}</b> — Xon Saroy rezidenti\n"
 
-        btn_consult = '📞 Xonadon xarid qilish' if lang == 'uz' else '📞 Подобрать квартиру'
+        btn_consult = "📞 " + ("Xonadon xarid qilish" if lang == 'uz' else ("Подобрать квартиру" if lang == 'ru' else "Find an apartment"))
         inline_kb = {'inline_keyboard': [[{'text': btn_consult, 'callback_data': 'req_consult'}]]}
 
-        first_c = clients.first()
-        if first_c and first_c.image_url:
-            self.send_photo(chat_id, first_c.image_url, caption=text, reply_markup=inline_kb)
+        # Send client images
+        client_images = [c for c in clients if (c.image and os.path.exists(c.image.path)) or c.image_url]
+        if client_images:
+            first = client_images[0]
+            img = first.image_url if first.image_url else first.image.path
+            self.send_photo(chat_id, img, caption=text, reply_markup=inline_kb)
         else:
             self.send_message(chat_id, text, reply_markup=inline_kb)
 
@@ -937,26 +1351,28 @@ class TelegramBot:
         bu = self.get_or_create_user(from_user)
         lang = self.get_lang(chat_id)
         name = html.escape(from_user.get('first_name', 'Foydalanuvchi'))
-        username = f"@{from_user.get('username')}" if from_user.get('username') else ("Mavjud emas" if lang == 'uz' else "Не указан")
+        username = f"@{from_user.get('username')}" if from_user.get('username') else ("Mavjud emas" if lang == 'uz' else ("Не указан" if lang == 'ru' else "Not set"))
 
-        lang_names = {'uz': 'O‘zbekcha', 'ru': 'Русский', 'en': 'English'}
-        lang_name = lang_names.get(lang, 'O‘zbekcha')
+        lang_names = {'uz': "O'zbekcha", 'ru': 'Русский', 'en': 'English'}
+        lang_name = lang_names.get(lang, "O'zbekcha")
 
-        # Check if matched with website user
         web_user = User.objects.filter(telegram_id=str(chat_id)).first()
         if web_user:
             site_status = (
-                f"🔗 <b>Veb-sayt hisobi:</b> Bog‘langan ✅\n"
+                f"🔗 <b>Veb-sayt hisobi:</b> Bog'langan ✅\n"
                 f"👤 <b>Foydalanuvchi nomi:</b> <code>{web_user.username}</code>\n"
                 f"📧 <b>Pochta:</b> {web_user.email or 'Kiritilmagan'}"
             )
         else:
             site_status = (
-                "🔗 <b>Veb-sayt hisobi:</b> Hali bog‘lanmagan ⚠️\n"
-                "<i>Saytimiz profil sozlamalarida Telegram ID'ingizni kiritib, hisobingizni bog‘lashingiz mumkin.</i>"
+                "🔗 <b>Veb-sayt hisobi:</b> Hali bog'lanmagan ⚠️\n"
+                "<i>Saytimiz profil sozlamalarida Telegram ID'ingizni kiritib, hisobingizni bog'lashingiz mumkin.</i>"
                 if lang == 'uz' else
-                "🔗 <b>Аккаунт на сайте:</b> Еще не привязан ⚠️\n"
-                "<i>Укажите ваш Telegram ID в профиле на сайте для привязки.</i>"
+                "🔗 <b>Аккаунт на сайте:</b> Не привязан ⚠️\n"
+                "<i>Укажите Telegram ID в профиле на сайте.</i>"
+                if lang == 'ru' else
+                "🔗 <b>Website account:</b> Not linked ⚠️\n"
+                "<i>Enter your Telegram ID in website profile settings.</i>"
             )
 
         text = self.t(
@@ -971,8 +1387,8 @@ class TelegramBot:
         site_url = f"{settings.SITE_URL}/profile/"
         kb = {
             'inline_keyboard': [
-                [{'text': '🌐 Saytdagi profilni ochish' if lang == 'uz' else '🌐 Профиль на сайте', 'url': site_url}],
-                [{'text': '🌐 Tilni o‘zgartirish' if lang == 'uz' else '🌐 Сменить язык', 'callback_data': 'show_lang_modal'}]
+                [{'text': '🌐 ' + ('Saytdagi profilni ochish' if lang == 'uz' else ('Профиль на сайте' if lang == 'ru' else 'Website Profile')), 'url': site_url}],
+                [{'text': '🌐 ' + ('Tilni o\u2018zgartirish' if lang == 'uz' else ('Сменить язык' if lang == 'ru' else 'Change Language')), 'callback_data': 'show_lang_modal'}]
             ]
         }
         self.send_message(chat_id, text, reply_markup=kb)
@@ -993,14 +1409,11 @@ class TelegramBot:
         username = from_user.get('username')
         username_str = f"@{username}" if username else "Mavjud emas"
 
-        # Update BotUser phone
         BotUser.objects.filter(telegram_id=str(chat_id)).update(phone=phone)
 
-        # Retrieve any pending note or project from state
         state = self.user_states.get(chat_id, {})
         full_note = custom_note or state.get('note', '')
 
-        # Save to database
         lead = Lead.objects.create(
             name=name,
             phone=phone,
@@ -1010,7 +1423,6 @@ class TelegramBot:
             note=full_note
         )
 
-        # Notify Admin on Telegram
         if self.admin_chat_id:
             admin_msg = (
                 "🚨 <b>YANGI ARIZA (Telegram Bot)!</b>\n"
@@ -1024,11 +1436,10 @@ class TelegramBot:
             admin_msg += (
                 f"⏱ <b>Vaqt:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
                 "━━━━━━━━━━━━━━━━━━━━\n"
-                f"👉 <a href='tg://user?id={chat_id}'>Mijoz bilan Telegramda yozishish</a>"
+                f"👉 <a href='tg://user?id={chat_id}'>Mijoz bilan yozishish</a>"
             )
             self.send_message(self.admin_chat_id, admin_msg)
 
-        # Confirm to User
         confirm_text = self.t(chat_id, 'lead_success', name=html.escape(name), phone=html.escape(phone))
         if chat_id in self.user_states:
             del self.user_states[chat_id]
@@ -1048,23 +1459,26 @@ class TelegramBot:
         new_leads_count = Lead.objects.filter(status=Lead.Status.NEW).count()
         homes_count = Home.objects.count()
         apts_count = Apartment.objects.count()
+        apts_available = Apartment.objects.filter(is_active=True, availability='available').count()
+        apts_reserved = Apartment.objects.filter(is_active=True, availability='reserved').count()
 
         text = (
             "📊 <b>XON SAROY ADMIN BOSHQARUV PANELI:</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
             f"👥 <b>Bot foydalanuvchilari:</b> {bot_users_count} ta\n"
             f"📬 <b>Jami arizalar (Leads):</b> {leads_count} ta\n"
-            f"🆕 <b>Yangi ko‘rilmagan arizalar:</b> {new_leads_count} ta\n"
+            f"🆕 <b>Yangi ko'rilmagan arizalar:</b> {new_leads_count} ta\n"
             f"🏗 <b>Loyihalar soni:</b> {homes_count} ta\n"
             f"🔑 <b>Faol xonadonlar:</b> {apts_count} ta\n"
+            f"  🟢 Bo'sh: {apts_available} | 🟡 Bron: {apts_reserved}\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
             "Quyidagi buyruqlardan foydalanishingiz mumkin:\n"
-            "• So‘nggi arizalarni ko‘rish\n"
+            "• So'nggi arizalarni ko'rish\n"
             "• Barcha foydalanuvchilarga xabar yuborish (<code>/broadcast [matn]</code>)"
         )
         kb = {
             'inline_keyboard': [
-                [{'text': '📬 So‘nggi 5 ta ariza', 'callback_data': 'admin_recent_leads'}],
+                [{'text': '📬 So\u2018nggi 5 ta ariza', 'callback_data': 'admin_recent_leads'}],
                 [{'text': '📢 Xabar yuborish (Broadcast)', 'callback_data': 'admin_broadcast_prompt'}]
             ]
         }
@@ -1079,7 +1493,7 @@ class TelegramBot:
             self.send_message(chat_id, "Hozircha arizalar mavjud emas.")
             return
 
-        text = "📬 <b>SO‘NGGI 5 TA ARIZA:</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        text = "📬 <b>SO'NGGI 5 TA ARIZA:</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
         for idx, l in enumerate(leads, 1):
             st_icon = '🆕' if l.status == 'new' else ('🟡' if l.status == 'in_contact' else '✅')
             text += (
@@ -1093,9 +1507,34 @@ class TelegramBot:
         self.send_message(chat_id, text)
 
     # -----------------------------------------------------------------------
+    # CALLBACK DATA PARSER for apartment pages
+    # -----------------------------------------------------------------------
+    def _parse_aptpage_callback(self, data_val):
+        """Parse aptpage_<filter>_p<page> callback data."""
+        import re
+        # aptpage_rm_<n>_p<page>
+        m = re.match(r'aptpage_rm_(\d+)_p(\d+)', data_val)
+        if m:
+            return {'rooms': int(m.group(1)), 'page': int(m.group(2))}
+        # aptpage_proj_<id>_p<page>
+        m = re.match(r'aptpage_proj_(\d+)_p(\d+)', data_val)
+        if m:
+            return {'project_id': int(m.group(1)), 'page': int(m.group(2))}
+        # aptpage_avail_<val>_p<page>
+        m = re.match(r'aptpage_avail_(\w+)_p(\d+)', data_val)
+        if m:
+            return {'availability': m.group(1), 'page': int(m.group(2))}
+        # aptpage_all_p<page>
+        m = re.match(r'aptpage_all_p(\d+)', data_val)
+        if m:
+            return {'page': int(m.group(1))}
+        return {'page': 1}
+
+    # -----------------------------------------------------------------------
     # POLLING LOOP
     # -----------------------------------------------------------------------
     def run_polling(self):
+        import re
         logger.info("Telegram Bot ishga tushirildi! Polling boshlandi...")
         offset = 0
 
@@ -1113,7 +1552,7 @@ class TelegramBot:
                         raise CommandError(
                             f"Telegram getUpdates xatosi: {data.get('description', 'token yoki polling muammosi')}"
                         )
-                    logger.error("Telegram getUpdates xatosi: %s", data.get('description', 'noma’lum xato'))
+                    logger.error("Telegram getUpdates xatosi: %s", data.get('description', "noma'lum xato"))
                     time.sleep(2)
                     continue
 
@@ -1127,7 +1566,6 @@ class TelegramBot:
                         text = msg.get('text', '').strip()
                         user = msg.get('from', {})
 
-                        # Record/update user activity
                         self.get_or_create_user(user)
 
                         # Contact sharing
@@ -1141,7 +1579,7 @@ class TelegramBot:
                         if text == '/start':
                             self.handle_start(chat_id, user)
 
-                        elif text in ('/lang', '🌐 Tilni o‘zgartirish', '🌐 Сменить язык', '🌐 Change Language', '🌐 Til / Язык / Lang'):
+                        elif text in ('/lang', '🌐 Tilni o\u2018zgartirish', '🌐 Сменить язык', '🌐 Change Language'):
                             self.handle_lang_prompt(chat_id)
 
                         elif text in ('🏢 Xon Saroy nima?', '🏢 О компании Xon Saroy', '🏢 About Xon Saroy', '/about'):
@@ -1151,9 +1589,9 @@ class TelegramBot:
                             self.handle_projects(chat_id)
 
                         elif text in ('🔑 Xonadonlar va Narxlar', '🔑 Квартиры и цены', '🔑 Apartments & Prices', '/apartments'):
-                            self.handle_apartments(chat_id)
+                            self.handle_apartments_menu(chat_id)
 
-                        elif text in ('🧮 To‘lov kalkulyatori', '🧮 Калькулятор рассрочки', '🧮 Payment Calculator', '/calc'):
+                        elif text in ('🧮 To\u2018lov kalkulyatori', '🧮 Калькулятор рассрочки', '🧮 Payment Calculator', '/calc'):
                             self.handle_calc_start(chat_id)
 
                         elif text in ('📍 Sotuv ofislari', '📍 Офисы продаж', '📍 Sales Offices', '/offices'):
@@ -1171,9 +1609,11 @@ class TelegramBot:
                         elif text in ('👤 Mening profilim', '👤 Мой профиль', '👤 My Profile', '/profile'):
                             self.handle_profile(chat_id, user)
 
-                        elif text in ('🌐 Veb-saytga o‘tish', '🌐 Перейти на сайт', '🌐 Visit Website', '/website'):
+                        elif text in ('🌐 Veb-saytga o\u2018tish', '🌐 Перейти на сайт', '🌐 Visit Website', '/website'):
                             site_url = f"{settings.SITE_URL}/"
-                            kb = {'inline_keyboard': [[{'text': '🌐 Xon Saroy veb-saytini ochish', 'url': site_url}]]}
+                            lang = self.get_lang(chat_id)
+                            label = '🌐 Xon Saroy veb-saytini ochish' if lang == 'uz' else ('🌐 Открыть сайт Xon Saroy' if lang == 'ru' else '🌐 Open Xon Saroy website')
+                            kb = {'inline_keyboard': [[{'text': label, 'url': site_url}]]}
                             self.send_message(chat_id, "Xon Saroy rasmiy veb-saytiga tashrif buyuring:", reply_markup=kb)
 
                         elif text in ('📊 Admin panel', '/admin'):
@@ -1190,7 +1630,7 @@ class TelegramBot:
                                         sent_cnt += 1
                                     except Exception:
                                         pass
-                                self.send_message(chat_id, f"✅ Xabar {sent_cnt} ta foydalanuvchiga muvaffaqiyatli yetkazildi.")
+                                self.send_message(chat_id, f"✅ Xabar {sent_cnt} ta foydalanuvchiga yetkazildi.")
                             else:
                                 self.send_message(chat_id, "Foydalanish: <code>/broadcast [xabar matni]</code>")
 
@@ -1205,10 +1645,10 @@ class TelegramBot:
                                 val = float(digits)
                                 self.handle_calc_select_down(chat_id, val)
                             else:
-                                self.send_message(chat_id, "Iltimos, to‘g‘ri summa kiriting (masalan: 500000000):")
+                                self.send_message(chat_id, "Iltimos, to'g'ri summa kiriting (masalan: 500000000):")
 
                         elif self.user_states.get(chat_id, {}).get('state') == 'awaiting_contact':
-                            self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', 'Qo‘lda kiritilgan telefon/xabar'))
+                            self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', "Qo'lda kiritilgan telefon/xabar"))
 
                         elif self.user_states.get(chat_id, {}).get('state') == 'admin_broadcast_input' and str(chat_id) == self.admin_chat_id:
                             users = BotUser.objects.values_list('telegram_id', flat=True)
@@ -1225,7 +1665,7 @@ class TelegramBot:
                         else:
                             self.send_message(
                                 chat_id,
-                                "Iltimos, quyidagi menyu tugmalaridan birini tanlang yoki /start buyrug‘ini bosing 👇",
+                                "Iltimos, quyidagi menyu tugmalaridan birini tanlang yoki /start buyrug'ini bosing 👇",
                                 reply_markup=self.get_main_keyboard(chat_id)
                             )
 
@@ -1240,11 +1680,15 @@ class TelegramBot:
                         self.answer_callback_query(cb_id)
                         self.get_or_create_user(user)
 
+                        # Noop
+                        if data_val == 'noop':
+                            continue
+
                         # Language selection
-                        if data_val.startswith('set_lang_'):
+                        elif data_val.startswith('set_lang_'):
                             lang_code = data_val.replace('set_lang_', '')
                             self.set_lang(chat_id, lang_code)
-                            lang_titles = {'uz': 'O‘zbek tili tanlandi 🇺🇿', 'ru': 'Выбран русский язык 🇷🇺', 'en': 'English language selected 🇬🇧'}
+                            lang_titles = {'uz': "O'zbek tili tanlandi 🇺🇿", 'ru': 'Выбран русский язык 🇷🇺', 'en': 'English language selected 🇬🇧'}
                             self.send_message(chat_id, lang_titles.get(lang_code, 'OK'), reply_markup=self.get_main_keyboard(chat_id))
 
                         elif data_val == 'show_lang_modal':
@@ -1259,25 +1703,71 @@ class TelegramBot:
                             self.handle_projects(chat_id, status_filter='completed')
                         elif data_val == 'filter_proj_soon':
                             self.handle_projects(chat_id, status_filter='soon')
+                        elif data_val == 'filter_proj_cat_all':
+                            self.handle_projects(chat_id)
+                        elif data_val.startswith('filter_proj_cat_'):
+                            cat_id = int(data_val.replace('filter_proj_cat_', ''))
+                            self.handle_projects(chat_id, category_filter=cat_id)
                         elif data_val.startswith('proj_'):
                             pid = int(data_val.replace('proj_', ''))
                             self.handle_project_detail(chat_id, pid)
+
+                        # Apartments from project detail — with optional room filter
+                        elif re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val):
+                            m = re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val)
+                            pid, rm = int(m.group(1)), int(m.group(2))
+                            self.handle_apartments_list(chat_id, page=1, project_id=pid, rooms=rm)
                         elif data_val.startswith('apts_proj_'):
                             pid = int(data_val.replace('apts_proj_', ''))
-                            self.handle_apartments(chat_id, project_id=pid)
+                            self.handle_apartments_list(chat_id, page=1, project_id=pid)
                         elif data_val.startswith('lead_proj_'):
                             pid = int(data_val.replace('lead_proj_', ''))
                             h = Home.objects.filter(id=pid).first()
                             note = f"Qiziqqan loyihasi: {h.name}" if h else "Loyiha bo'yicha maslahat"
                             self.request_consultation_prompt(chat_id, note=note)
 
-                        # Apartments
+                        # Apartments menu
+                        elif data_val == 'apts_menu':
+                            self.handle_apartments_menu(chat_id)
+
+                        # Apartments filter by room + page
+                        elif re.match(r'apts_rm_(\d+)_p(\d+)', data_val):
+                            m = re.match(r'apts_rm_(\d+)_p(\d+)', data_val)
+                            rm, pg = int(m.group(1)), int(m.group(2))
+                            self.handle_apartments_list(chat_id, page=pg, rooms=rm)
+
+                        # All apartments + page
+                        elif re.match(r'apts_all_p(\d+)', data_val):
+                            m = re.match(r'apts_all_p(\d+)', data_val)
+                            pg = int(m.group(1))
+                            self.handle_apartments_list(chat_id, page=pg)
+
+                        # Availability filter
+                        elif re.match(r'apts_avail_(\w+)_p(\d+)', data_val):
+                            m = re.match(r'apts_avail_(\w+)_p(\d+)', data_val)
+                            avail, pg = m.group(1), int(m.group(2))
+                            self.handle_apartments_list(chat_id, page=pg, availability=avail)
+
+                        # Apartment page navigation (aptpage_...)
+                        elif data_val.startswith('aptpage'):
+                            params = self._parse_aptpage_callback(data_val)
+                            self.handle_apartments_list(
+                                chat_id,
+                                page=params.get('page', 1),
+                                rooms=params.get('rooms'),
+                                project_id=params.get('project_id'),
+                                availability=params.get('availability')
+                            )
+
+                        # Legacy compatibility
                         elif data_val == 'apts_rm_all':
-                            self.handle_apartments(chat_id)
-                        elif data_val.startswith('apts_rm_'):
-                            rm_str = data_val.replace('apts_rm_', '')
-                            if rm_str.isdigit():
-                                self.handle_apartments(chat_id, rooms=int(rm_str))
+                            self.handle_apartments_menu(chat_id)
+                        elif re.match(r'apts_rm_(\d+)$', data_val):
+                            m = re.match(r'apts_rm_(\d+)$', data_val)
+                            rm = int(m.group(1))
+                            self.handle_apartments_list(chat_id, rooms=rm)
+
+                        # Apartment detail
                         elif data_val.startswith('apt_detail_'):
                             aid = int(data_val.replace('apt_detail_', ''))
                             self.handle_apartment_detail(chat_id, aid)
@@ -1292,10 +1782,10 @@ class TelegramBot:
                             aid = int(data_val.replace('book_apt_', ''))
                             a = Apartment.objects.filter(id=aid).first()
                             if not a or a.availability != 'available':
-                                self.send_message(chat_id, "Bu xonadon hozir bo‘sh emas.")
+                                self.send_message(chat_id, "Bu xonadon hozir bo'sh emas.")
                                 continue
                             p_name = a.project.name if (a and a.project) else "Xon Saroy"
-                            note = f"Band qilish uchun xonadon: {p_name}, {a.rooms}-xona, {a.area} m², {fmt_sum(a.price)} so'm" if a else "Xonadonni band qilish"
+                            note = f"Band qilish: {p_name}, {a.rooms}-xona, {a.area} m², {fmt_sum(a.price)} so'm" if a else "Xonadonni band qilish"
                             self.request_consultation_prompt(chat_id, note=note)
 
                         # Calculator
@@ -1305,7 +1795,7 @@ class TelegramBot:
                             pr_val = data_val.replace('calc_pr_', '')
                             if pr_val == 'custom':
                                 self.user_states[chat_id] = {'state': 'calc_custom_amount'}
-                                self.send_message(chat_id, "Iltimos, xonadon narxini so‘mda yozib yuboring (masalan: 450000000):")
+                                self.send_message(chat_id, "Iltimos, xonadon narxini so'mda yozib yuboring (masalan: 450000000):")
                             elif pr_val.isdigit():
                                 self.handle_calc_select_down(chat_id, float(pr_val))
                         elif data_val.startswith('calc_down_'):
@@ -1329,15 +1819,15 @@ class TelegramBot:
                             self.handle_admin_recent_leads(chat_id)
                         elif data_val == 'admin_broadcast_prompt' and str(chat_id) == self.admin_chat_id:
                             self.user_states[chat_id] = {'state': 'admin_broadcast_input'}
-                            self.send_message(chat_id, "Barcha foydalanuvchilarga yubormoqchi bo‘lgan xabaringizni yozib yuboring:")
+                            self.send_message(chat_id, "Barcha foydalanuvchilarga yubormoqchi bo'lgan xabaringizni yozib yuboring:")
 
             except CommandError:
                 raise
             except requests.RequestException as err:
-                logger.error("Telegram polling so‘rovi bajarilmadi (%s).", type(err).__name__)
+                logger.error("Telegram polling so'rovi bajarilmadi (%s).", type(err).__name__)
                 time.sleep(3)
             except Exception as err:
-                logger.error("Polling loop exception (%s).", type(err).__name__)
+                logger.exception("Polling loop exception (%s).", type(err).__name__)
                 time.sleep(3)
 
 
@@ -1371,17 +1861,17 @@ class Command(BaseCommand):
         webhook_info = bot.call_api('getWebhookInfo')
         if not webhook_info.get('ok'):
             raise CommandError(
-                f"Telegram webhook holatini tekshirib bo‘lmadi: {webhook_info.get('description', 'API javob bermadi')}"
+                f"Telegram webhook holatini tekshirib bo'lmadi: {webhook_info.get('description', 'API javob bermadi')}"
             )
         webhook_url = webhook_info.get('result', {}).get('url', '')
         if webhook_url:
             raise CommandError(
-                "Botda webhook sozlangan. Bu loyiha polling ishlatadi; webhookni o‘chirib, "
-                "qayta `python manage.py runbot --check` buyrug‘ini bajaring."
+                "Botda webhook sozlangan. Bu loyiha polling ishlatadi; webhookni o'chirib, "
+                "qayta `python manage.py runbot --check` buyrug'ini bajaring."
             )
 
-        username = bot_info.get('result', {}).get('username', 'noma’lum')
-        status = f"Bot @{username} tokeni va polling sozlamalari to‘g‘ri."
+        username = bot_info.get('result', {}).get('username', "noma'lum")
+        status = f"Bot @{username} tokeni va polling sozlamalari to'g'ri."
         if admin_chat_id:
             status += " Admin xabarlari yoqilgan."
         else:
