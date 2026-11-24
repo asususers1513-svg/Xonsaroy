@@ -1,4 +1,5 @@
 import html
+import json
 import logging
 import os
 import secrets
@@ -12,6 +13,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -26,6 +28,45 @@ from .forms import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@csrf_exempt
+@require_POST
+def telegram_webhook(request):
+    webhook_secret = os.getenv('TELEGRAM_WEBHOOK_SECRET', '').strip()
+    if not webhook_secret:
+        logger.error("TELEGRAM_WEBHOOK_SECRET sozlanmagan.")
+        return JsonResponse({'ok': False}, status=503)
+
+    provided_secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+    if not secrets.compare_digest(provided_secret, webhook_secret):
+        return JsonResponse({'ok': False}, status=403)
+
+    try:
+        update = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON.'}, status=400)
+    if not isinstance(update, dict):
+        return JsonResponse({'ok': False, 'error': 'Invalid update.'}, status=400)
+
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
+    if not bot_token:
+        logger.error("TELEGRAM_BOT_TOKEN sozlanmagan.")
+        return JsonResponse({'ok': False}, status=503)
+
+    from app.management.commands.runbot import TelegramBot
+
+    bot = TelegramBot(
+        token=bot_token,
+        admin_chat_id=os.getenv('TELEGRAM_ADMIN_CHAT_ID', '').strip(),
+    )
+    try:
+        bot.handle_update(update)
+    except Exception:
+        logger.exception("Telegram webhook update'ini qayta ishlashda xatolik.")
+        return JsonResponse({'ok': False}, status=500)
+
+    return JsonResponse({'ok': True})
 
 
 def send_telegram_message(chat_id, text):

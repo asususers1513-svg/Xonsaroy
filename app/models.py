@@ -253,6 +253,7 @@ class BotUser(models.Model):
 	username = models.CharField(max_length=120, blank=True, null=True, verbose_name='Username')
 	phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefon')
 	language = models.CharField(max_length=5, default='uz', verbose_name='Tanlangan til')
+	conversation_state = models.JSONField(default=dict, blank=True, verbose_name='Bot holati')
 	created_at = models.DateTimeField(auto_now_add=True, verbose_name='Qo‘shilgan vaqt')
 	last_activity = models.DateTimeField(auto_now=True, verbose_name='Oxirgi faollik')
 

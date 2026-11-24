@@ -9,10 +9,11 @@ from app.views import (
     contacts_view, partners_view, apartment_reservation_request_view,
     apartment_reservation_confirm_view,
     password_reset_request_view, password_reset_confirm_view, password_reset_resend_view,
-    apartment_detail_api,
+    apartment_detail_api, telegram_webhook,
 )
 
 urlpatterns = [
+    path('telegram/webhook/', telegram_webhook, name='telegram_webhook'),
     path('', home, name='home'),
     path('contacts/', contacts_view, name='contacts'),
     path('partners/', partners_view, name='partners'),

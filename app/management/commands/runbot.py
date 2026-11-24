@@ -5,6 +5,7 @@ import json
 import logging
 import requests
 import html
+from urllib.parse import urlparse
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from app.models import Home, Apartment, SalesOffice, Material, Client, User, BotUser, Lead, Category
@@ -1584,6 +1585,283 @@ class TelegramBot:
             return {'page': int(m.group(1))}
         return {'page': 1}
 
+    def handle_update(self, update):
+        import re
+
+        message = update.get('message')
+        callback_query = update.get('callback_query')
+        if message:
+            chat = message.get('chat')
+            from_user = message.get('from', {})
+        elif callback_query:
+            callback_message = callback_query.get('message') or {}
+            chat = callback_message.get('chat')
+            from_user = callback_query.get('from', {})
+        else:
+            return
+
+        if not chat:
+            return
+
+        chat_id = chat['id']
+        bot_user = self.get_or_create_user(from_user)
+        if bot_user.conversation_state:
+            self.user_states[chat_id] = bot_user.conversation_state
+        else:
+            self.user_states.pop(chat_id, None)
+
+        try:
+            # 1. MESSAGE UPDATE
+            if 'message' in update:
+                msg = update['message']
+                chat_id = msg['chat']['id']
+                text = msg.get('text', '').strip()
+                user = msg.get('from', {})
+
+                self.get_or_create_user(user)
+
+                # Contact sharing
+                if 'contact' in msg:
+                    contact = msg['contact']
+                    phone = contact.get('phone_number')
+                    self.process_lead(chat_id, user, phone, "Kontakt tugmasi orqali yuborildi")
+                    return
+                # Text command routing
+                if text == '/start':
+                    self.handle_start(chat_id, user)
+
+                elif text in ('/lang', '🌐 Tilni o\u2018zgartirish', '🌐 Сменить язык', '🌐 Change Language'):
+                    self.handle_lang_prompt(chat_id)
+
+                elif text in ('🏢 Xon Saroy nima?', '🏢 О компании Xon Saroy', '🏢 About Xon Saroy', '/about'):
+                    self.handle_about(chat_id)
+
+                elif text in ('🏗 Loyihalarimiz', '🏗 Наши проекты', '🏗 Our Projects', '/projects'):
+                    self.handle_projects(chat_id)
+
+                elif text in ('🔑 Xonadonlar va Narxlar', '🔑 Квартиры и цены', '🔑 Apartments & Prices', '/apartments'):
+                    self.handle_apartments_menu(chat_id)
+
+                elif text in ('🧮 To\u2018lov kalkulyatori', '🧮 Калькулятор рассрочки', '🧮 Payment Calculator', '/calc'):
+                    self.handle_calc_start(chat_id)
+
+                elif text in ('📍 Sotuv ofislari', '📍 Офисы продаж', '📍 Sales Offices', '/offices'):
+                    self.handle_offices(chat_id)
+
+                elif text in ('🧱 Sifat va Materiallar', '🧱 Качество и материалы', '🧱 Quality & Materials', '/materials'):
+                    self.handle_materials(chat_id)
+
+                elif text in ('⭐ Mamnun mijozlar', '⭐ Отзывы клиентов', '⭐ Customer Reviews', '/reviews'):
+                    self.handle_reviews(chat_id)
+
+                elif text in ('📞 Konsultatsiya olish', '📞 Получить консультацию', '📞 Get Consultation', '/consult', '/contact'):
+                    self.request_consultation_prompt(chat_id)
+
+                elif text in ('👤 Mening profilim', '👤 Мой профиль', '👤 My Profile', '/profile'):
+                    self.handle_profile(chat_id, user)
+
+                elif text in ('🌐 Veb-saytga o\u2018tish', '🌐 Перейти на сайт', '🌐 Visit Website', '/website'):
+                    site_url = f"{settings.SITE_URL}/"
+                    lang = self.get_lang(chat_id)
+                    label = '🌐 Xon Saroy veb-saytini ochish' if lang == 'uz' else ('🌐 Открыть сайт Xon Saroy' if lang == 'ru' else '🌐 Open Xon Saroy website')
+                    kb = {'inline_keyboard': [[{'text': label, 'url': site_url}]]}
+                    self.send_message(chat_id, "Xon Saroy rasmiy veb-saytiga tashrif buyuring:", reply_markup=kb)
+
+                elif text in ('📊 Admin panel', '/admin'):
+                    self.handle_admin_panel(chat_id)
+
+                elif text.startswith('/broadcast') and str(chat_id) == self.admin_chat_id:
+                    broadcast_msg = text.replace('/broadcast', '').strip()
+                    if broadcast_msg:
+                        self.broadcast_message(
+                            chat_id,
+                            f"📢 <b>XON SAROY YANGILIK:</b>\n\n{broadcast_msg}",
+                        )
+                    else:
+                        self.send_message(chat_id, "Foydalanish: <code>/broadcast [xabar matni]</code>")
+
+                elif text in ('⬅️ Asosiy menyu', '⬅️ Главное меню', '⬅️ Main Menu'):
+                    if chat_id in self.user_states:
+                        del self.user_states[chat_id]
+                    self.send_message(chat_id, "Asosiy menyudasiz 👇", reply_markup=self.get_main_keyboard(chat_id))
+
+                elif self.user_states.get(chat_id, {}).get('state') == 'calc_custom_amount':
+                    digits = ''.join(c for c in text if c.isdigit())
+                    if digits and int(digits) > 10000000:
+                        val = float(digits)
+                        self.handle_calc_select_down(chat_id, val)
+                    else:
+                        self.send_message(chat_id, "Iltimos, to'g'ri summa kiriting (masalan: 500000000):")
+
+                elif self.user_states.get(chat_id, {}).get('state') == 'awaiting_contact':
+                    self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', "Qo'lda kiritilgan telefon/xabar"))
+
+                elif self.user_states.get(chat_id, {}).get('state') == 'admin_broadcast_input' and str(chat_id) == self.admin_chat_id:
+                    self.broadcast_message(chat_id, f"📢 <b>XON SAROY:</b>\n\n{text}")
+                    del self.user_states[chat_id]
+
+                else:
+                    self.send_message(
+                        chat_id,
+                        "Iltimos, quyidagi menyu tugmalaridan birini tanlang yoki /start buyrug'ini bosing 👇",
+                        reply_markup=self.get_main_keyboard(chat_id)
+                    )
+
+            # 2. CALLBACK QUERY (INLINE BUTTONS)
+            elif 'callback_query' in update:
+                cb = update['callback_query']
+                cb_id = cb['id']
+                chat_id = cb['message']['chat']['id']
+                data_val = cb.get('data', '')
+                user = cb.get('from', {})
+
+                self.answer_callback_query(cb_id)
+                self.get_or_create_user(user)
+
+                # Noop
+                if data_val == 'noop':
+                    return
+                # Language selection
+                elif data_val.startswith('set_lang_'):
+                    lang_code = data_val.replace('set_lang_', '')
+                    self.set_lang(chat_id, lang_code)
+                    lang_titles = {'uz': "O'zbek tili tanlandi 🇺🇿", 'ru': 'Выбран русский язык 🇷🇺', 'en': 'English language selected 🇬🇧'}
+                    self.send_message(chat_id, lang_titles.get(lang_code, 'OK'), reply_markup=self.get_main_keyboard(chat_id))
+
+                elif data_val == 'show_lang_modal':
+                    self.handle_lang_prompt(chat_id)
+
+                # Projects
+                elif data_val == 'filter_proj_all':
+                    self.handle_projects(chat_id)
+                elif data_val == 'filter_proj_in_progress':
+                    self.handle_projects(chat_id, status_filter='in_progress')
+                elif data_val == 'filter_proj_completed':
+                    self.handle_projects(chat_id, status_filter='completed')
+                elif data_val == 'filter_proj_soon':
+                    self.handle_projects(chat_id, status_filter='soon')
+                elif data_val == 'filter_proj_cat_all':
+                    self.handle_projects(chat_id)
+                elif data_val.startswith('filter_proj_cat_'):
+                    cat_id = int(data_val.replace('filter_proj_cat_', ''))
+                    self.handle_projects(chat_id, category_filter=cat_id)
+                elif data_val.startswith('proj_'):
+                    pid = int(data_val.replace('proj_', ''))
+                    self.handle_project_detail(chat_id, pid)
+
+                # Apartments from project detail — with optional room filter
+                elif re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val):
+                    m = re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val)
+                    pid, rm = int(m.group(1)), int(m.group(2))
+                    self.handle_apartments_list(chat_id, page=1, project_id=pid, rooms=rm)
+                elif data_val.startswith('apts_proj_'):
+                    pid = int(data_val.replace('apts_proj_', ''))
+                    self.handle_apartments_list(chat_id, page=1, project_id=pid)
+                elif data_val.startswith('lead_proj_'):
+                    pid = int(data_val.replace('lead_proj_', ''))
+                    h = Home.objects.filter(id=pid).first()
+                    note = f"Qiziqqan loyihasi: {h.name}" if h else "Loyiha bo'yicha maslahat"
+                    self.request_consultation_prompt(chat_id, note=note)
+
+                # Apartments menu
+                elif data_val == 'apts_menu':
+                    self.handle_apartments_menu(chat_id)
+
+                # Apartments filter by room + page
+                elif re.match(r'apts_rm_(\d+)_p(\d+)', data_val):
+                    m = re.match(r'apts_rm_(\d+)_p(\d+)', data_val)
+                    rm, pg = int(m.group(1)), int(m.group(2))
+                    self.handle_apartments_list(chat_id, page=pg, rooms=rm)
+
+                # All apartments + page
+                elif re.match(r'apts_all_p(\d+)', data_val):
+                    m = re.match(r'apts_all_p(\d+)', data_val)
+                    pg = int(m.group(1))
+                    self.handle_apartments_list(chat_id, page=pg)
+
+                # Availability filter
+                elif re.match(r'apts_avail_(\w+)_p(\d+)', data_val):
+                    m = re.match(r'apts_avail_(\w+)_p(\d+)', data_val)
+                    avail, pg = m.group(1), int(m.group(2))
+                    self.handle_apartments_list(chat_id, page=pg, availability=avail)
+
+                # Apartment page navigation (aptpage_...)
+                elif data_val.startswith('aptpage'):
+                    params = self._parse_aptpage_callback(data_val)
+                    self.handle_apartments_list(
+                        chat_id,
+                        page=params.get('page', 1),
+                        rooms=params.get('rooms'),
+                        project_id=params.get('project_id'),
+                        availability=params.get('availability')
+                    )
+
+                # Legacy compatibility
+                elif data_val == 'apts_rm_all':
+                    self.handle_apartments_menu(chat_id)
+                elif re.match(r'apts_rm_(\d+)$', data_val):
+                    m = re.match(r'apts_rm_(\d+)$', data_val)
+                    rm = int(m.group(1))
+                    self.handle_apartments_list(chat_id, rooms=rm)
+
+                # Apartment detail
+                elif data_val.startswith('apt_detail_'):
+                    aid = int(data_val.replace('apt_detail_', ''))
+                    self.handle_apartment_detail(chat_id, aid)
+                elif data_val.startswith('calc_apt_'):
+                    aid = int(data_val.replace('calc_apt_', ''))
+                    a = Apartment.objects.filter(id=aid).first()
+                    if a and a.price:
+                        self.handle_calc_start(chat_id, default_price=a.price)
+                    else:
+                        self.handle_calc_start(chat_id)
+                elif data_val.startswith('book_apt_'):
+                    aid = int(data_val.replace('book_apt_', ''))
+                    a = Apartment.objects.filter(id=aid).first()
+                    if not a or a.availability != 'available':
+                        self.send_message(chat_id, "Bu xonadon hozir bo'sh emas.")
+                        return
+                    p_name = a.project.name if (a and a.project) else "Xon Saroy"
+                    note = f"Band qilish: {p_name}, {a.rooms}-xona, {a.area} m², {fmt_sum(a.price)} so'm" if a else "Xonadonni band qilish"
+                    self.request_consultation_prompt(chat_id, note=note)
+
+                # Calculator
+                elif data_val == 'calc_start':
+                    self.handle_calc_start(chat_id)
+                elif data_val.startswith('calc_pr_'):
+                    pr_val = data_val.replace('calc_pr_', '')
+                    if pr_val == 'custom':
+                        self.user_states[chat_id] = {'state': 'calc_custom_amount'}
+                        self.send_message(chat_id, "Iltimos, xonadon narxini so'mda yozib yuboring (masalan: 450000000):")
+                    elif pr_val.isdigit():
+                        self.handle_calc_select_down(chat_id, float(pr_val))
+                elif data_val.startswith('calc_down_'):
+                    pct_val = int(data_val.replace('calc_down_', ''))
+                    self.handle_calc_select_period(chat_id, pct_val)
+                elif data_val.startswith('calc_per_'):
+                    per_val = int(data_val.replace('calc_per_', ''))
+                    self.handle_calc_compute(chat_id, per_val)
+
+                # Offices
+                elif data_val.startswith('office_loc_'):
+                    oid = int(data_val.replace('office_loc_', ''))
+                    self.handle_office_location(chat_id, oid)
+
+                # Consultation
+                elif data_val == 'req_consult':
+                    self.request_consultation_prompt(chat_id)
+
+                # Admin
+                elif data_val == 'admin_recent_leads' and str(chat_id) == self.admin_chat_id:
+                    self.handle_admin_recent_leads(chat_id)
+                elif data_val == 'admin_broadcast_prompt' and str(chat_id) == self.admin_chat_id:
+                    self.user_states[chat_id] = {'state': 'admin_broadcast_input'}
+                    self.send_message(chat_id, "Barcha foydalanuvchilarga yubormoqchi bo'lgan xabaringizni yozib yuboring:")
+
+        finally:
+            state = self.user_states.get(chat_id) or {}
+            BotUser.objects.filter(telegram_id=str(chat_id)).update(conversation_state=state)
+
     # -----------------------------------------------------------------------
     # POLLING LOOP
     # -----------------------------------------------------------------------
@@ -1614,255 +1892,7 @@ class TelegramBot:
 
                 for update in data.get('result', []):
                     offset = update['update_id'] + 1
-
-                    # 1. MESSAGE UPDATE
-                    if 'message' in update:
-                        msg = update['message']
-                        chat_id = msg['chat']['id']
-                        text = msg.get('text', '').strip()
-                        user = msg.get('from', {})
-
-                        self.get_or_create_user(user)
-
-                        # Contact sharing
-                        if 'contact' in msg:
-                            contact = msg['contact']
-                            phone = contact.get('phone_number')
-                            self.process_lead(chat_id, user, phone, "Kontakt tugmasi orqali yuborildi")
-                            continue
-
-                        # Text command routing
-                        if text == '/start':
-                            self.handle_start(chat_id, user)
-
-                        elif text in ('/lang', '🌐 Tilni o\u2018zgartirish', '🌐 Сменить язык', '🌐 Change Language'):
-                            self.handle_lang_prompt(chat_id)
-
-                        elif text in ('🏢 Xon Saroy nima?', '🏢 О компании Xon Saroy', '🏢 About Xon Saroy', '/about'):
-                            self.handle_about(chat_id)
-
-                        elif text in ('🏗 Loyihalarimiz', '🏗 Наши проекты', '🏗 Our Projects', '/projects'):
-                            self.handle_projects(chat_id)
-
-                        elif text in ('🔑 Xonadonlar va Narxlar', '🔑 Квартиры и цены', '🔑 Apartments & Prices', '/apartments'):
-                            self.handle_apartments_menu(chat_id)
-
-                        elif text in ('🧮 To\u2018lov kalkulyatori', '🧮 Калькулятор рассрочки', '🧮 Payment Calculator', '/calc'):
-                            self.handle_calc_start(chat_id)
-
-                        elif text in ('📍 Sotuv ofislari', '📍 Офисы продаж', '📍 Sales Offices', '/offices'):
-                            self.handle_offices(chat_id)
-
-                        elif text in ('🧱 Sifat va Materiallar', '🧱 Качество и материалы', '🧱 Quality & Materials', '/materials'):
-                            self.handle_materials(chat_id)
-
-                        elif text in ('⭐ Mamnun mijozlar', '⭐ Отзывы клиентов', '⭐ Customer Reviews', '/reviews'):
-                            self.handle_reviews(chat_id)
-
-                        elif text in ('📞 Konsultatsiya olish', '📞 Получить консультацию', '📞 Get Consultation', '/consult', '/contact'):
-                            self.request_consultation_prompt(chat_id)
-
-                        elif text in ('👤 Mening profilim', '👤 Мой профиль', '👤 My Profile', '/profile'):
-                            self.handle_profile(chat_id, user)
-
-                        elif text in ('🌐 Veb-saytga o\u2018tish', '🌐 Перейти на сайт', '🌐 Visit Website', '/website'):
-                            site_url = f"{settings.SITE_URL}/"
-                            lang = self.get_lang(chat_id)
-                            label = '🌐 Xon Saroy veb-saytini ochish' if lang == 'uz' else ('🌐 Открыть сайт Xon Saroy' if lang == 'ru' else '🌐 Open Xon Saroy website')
-                            kb = {'inline_keyboard': [[{'text': label, 'url': site_url}]]}
-                            self.send_message(chat_id, "Xon Saroy rasmiy veb-saytiga tashrif buyuring:", reply_markup=kb)
-
-                        elif text in ('📊 Admin panel', '/admin'):
-                            self.handle_admin_panel(chat_id)
-
-                        elif text.startswith('/broadcast') and str(chat_id) == self.admin_chat_id:
-                            broadcast_msg = text.replace('/broadcast', '').strip()
-                            if broadcast_msg:
-                                self.broadcast_message(
-                                    chat_id,
-                                    f"📢 <b>XON SAROY YANGILIK:</b>\n\n{broadcast_msg}",
-                                )
-                            else:
-                                self.send_message(chat_id, "Foydalanish: <code>/broadcast [xabar matni]</code>")
-
-                        elif text in ('⬅️ Asosiy menyu', '⬅️ Главное меню', '⬅️ Main Menu'):
-                            if chat_id in self.user_states:
-                                del self.user_states[chat_id]
-                            self.send_message(chat_id, "Asosiy menyudasiz 👇", reply_markup=self.get_main_keyboard(chat_id))
-
-                        elif self.user_states.get(chat_id, {}).get('state') == 'calc_custom_amount':
-                            digits = ''.join(c for c in text if c.isdigit())
-                            if digits and int(digits) > 10000000:
-                                val = float(digits)
-                                self.handle_calc_select_down(chat_id, val)
-                            else:
-                                self.send_message(chat_id, "Iltimos, to'g'ri summa kiriting (masalan: 500000000):")
-
-                        elif self.user_states.get(chat_id, {}).get('state') == 'awaiting_contact':
-                            self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', "Qo'lda kiritilgan telefon/xabar"))
-
-                        elif self.user_states.get(chat_id, {}).get('state') == 'admin_broadcast_input' and str(chat_id) == self.admin_chat_id:
-                            self.broadcast_message(chat_id, f"📢 <b>XON SAROY:</b>\n\n{text}")
-                            del self.user_states[chat_id]
-
-                        else:
-                            self.send_message(
-                                chat_id,
-                                "Iltimos, quyidagi menyu tugmalaridan birini tanlang yoki /start buyrug'ini bosing 👇",
-                                reply_markup=self.get_main_keyboard(chat_id)
-                            )
-
-                    # 2. CALLBACK QUERY (INLINE BUTTONS)
-                    elif 'callback_query' in update:
-                        cb = update['callback_query']
-                        cb_id = cb['id']
-                        chat_id = cb['message']['chat']['id']
-                        data_val = cb.get('data', '')
-                        user = cb.get('from', {})
-
-                        self.answer_callback_query(cb_id)
-                        self.get_or_create_user(user)
-
-                        # Noop
-                        if data_val == 'noop':
-                            continue
-
-                        # Language selection
-                        elif data_val.startswith('set_lang_'):
-                            lang_code = data_val.replace('set_lang_', '')
-                            self.set_lang(chat_id, lang_code)
-                            lang_titles = {'uz': "O'zbek tili tanlandi 🇺🇿", 'ru': 'Выбран русский язык 🇷🇺', 'en': 'English language selected 🇬🇧'}
-                            self.send_message(chat_id, lang_titles.get(lang_code, 'OK'), reply_markup=self.get_main_keyboard(chat_id))
-
-                        elif data_val == 'show_lang_modal':
-                            self.handle_lang_prompt(chat_id)
-
-                        # Projects
-                        elif data_val == 'filter_proj_all':
-                            self.handle_projects(chat_id)
-                        elif data_val == 'filter_proj_in_progress':
-                            self.handle_projects(chat_id, status_filter='in_progress')
-                        elif data_val == 'filter_proj_completed':
-                            self.handle_projects(chat_id, status_filter='completed')
-                        elif data_val == 'filter_proj_soon':
-                            self.handle_projects(chat_id, status_filter='soon')
-                        elif data_val == 'filter_proj_cat_all':
-                            self.handle_projects(chat_id)
-                        elif data_val.startswith('filter_proj_cat_'):
-                            cat_id = int(data_val.replace('filter_proj_cat_', ''))
-                            self.handle_projects(chat_id, category_filter=cat_id)
-                        elif data_val.startswith('proj_'):
-                            pid = int(data_val.replace('proj_', ''))
-                            self.handle_project_detail(chat_id, pid)
-
-                        # Apartments from project detail — with optional room filter
-                        elif re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val):
-                            m = re.match(r'apts_proj_(\d+)_rm_(\d+)', data_val)
-                            pid, rm = int(m.group(1)), int(m.group(2))
-                            self.handle_apartments_list(chat_id, page=1, project_id=pid, rooms=rm)
-                        elif data_val.startswith('apts_proj_'):
-                            pid = int(data_val.replace('apts_proj_', ''))
-                            self.handle_apartments_list(chat_id, page=1, project_id=pid)
-                        elif data_val.startswith('lead_proj_'):
-                            pid = int(data_val.replace('lead_proj_', ''))
-                            h = Home.objects.filter(id=pid).first()
-                            note = f"Qiziqqan loyihasi: {h.name}" if h else "Loyiha bo'yicha maslahat"
-                            self.request_consultation_prompt(chat_id, note=note)
-
-                        # Apartments menu
-                        elif data_val == 'apts_menu':
-                            self.handle_apartments_menu(chat_id)
-
-                        # Apartments filter by room + page
-                        elif re.match(r'apts_rm_(\d+)_p(\d+)', data_val):
-                            m = re.match(r'apts_rm_(\d+)_p(\d+)', data_val)
-                            rm, pg = int(m.group(1)), int(m.group(2))
-                            self.handle_apartments_list(chat_id, page=pg, rooms=rm)
-
-                        # All apartments + page
-                        elif re.match(r'apts_all_p(\d+)', data_val):
-                            m = re.match(r'apts_all_p(\d+)', data_val)
-                            pg = int(m.group(1))
-                            self.handle_apartments_list(chat_id, page=pg)
-
-                        # Availability filter
-                        elif re.match(r'apts_avail_(\w+)_p(\d+)', data_val):
-                            m = re.match(r'apts_avail_(\w+)_p(\d+)', data_val)
-                            avail, pg = m.group(1), int(m.group(2))
-                            self.handle_apartments_list(chat_id, page=pg, availability=avail)
-
-                        # Apartment page navigation (aptpage_...)
-                        elif data_val.startswith('aptpage'):
-                            params = self._parse_aptpage_callback(data_val)
-                            self.handle_apartments_list(
-                                chat_id,
-                                page=params.get('page', 1),
-                                rooms=params.get('rooms'),
-                                project_id=params.get('project_id'),
-                                availability=params.get('availability')
-                            )
-
-                        # Legacy compatibility
-                        elif data_val == 'apts_rm_all':
-                            self.handle_apartments_menu(chat_id)
-                        elif re.match(r'apts_rm_(\d+)$', data_val):
-                            m = re.match(r'apts_rm_(\d+)$', data_val)
-                            rm = int(m.group(1))
-                            self.handle_apartments_list(chat_id, rooms=rm)
-
-                        # Apartment detail
-                        elif data_val.startswith('apt_detail_'):
-                            aid = int(data_val.replace('apt_detail_', ''))
-                            self.handle_apartment_detail(chat_id, aid)
-                        elif data_val.startswith('calc_apt_'):
-                            aid = int(data_val.replace('calc_apt_', ''))
-                            a = Apartment.objects.filter(id=aid).first()
-                            if a and a.price:
-                                self.handle_calc_start(chat_id, default_price=a.price)
-                            else:
-                                self.handle_calc_start(chat_id)
-                        elif data_val.startswith('book_apt_'):
-                            aid = int(data_val.replace('book_apt_', ''))
-                            a = Apartment.objects.filter(id=aid).first()
-                            if not a or a.availability != 'available':
-                                self.send_message(chat_id, "Bu xonadon hozir bo'sh emas.")
-                                continue
-                            p_name = a.project.name if (a and a.project) else "Xon Saroy"
-                            note = f"Band qilish: {p_name}, {a.rooms}-xona, {a.area} m², {fmt_sum(a.price)} so'm" if a else "Xonadonni band qilish"
-                            self.request_consultation_prompt(chat_id, note=note)
-
-                        # Calculator
-                        elif data_val == 'calc_start':
-                            self.handle_calc_start(chat_id)
-                        elif data_val.startswith('calc_pr_'):
-                            pr_val = data_val.replace('calc_pr_', '')
-                            if pr_val == 'custom':
-                                self.user_states[chat_id] = {'state': 'calc_custom_amount'}
-                                self.send_message(chat_id, "Iltimos, xonadon narxini so'mda yozib yuboring (masalan: 450000000):")
-                            elif pr_val.isdigit():
-                                self.handle_calc_select_down(chat_id, float(pr_val))
-                        elif data_val.startswith('calc_down_'):
-                            pct_val = int(data_val.replace('calc_down_', ''))
-                            self.handle_calc_select_period(chat_id, pct_val)
-                        elif data_val.startswith('calc_per_'):
-                            per_val = int(data_val.replace('calc_per_', ''))
-                            self.handle_calc_compute(chat_id, per_val)
-
-                        # Offices
-                        elif data_val.startswith('office_loc_'):
-                            oid = int(data_val.replace('office_loc_', ''))
-                            self.handle_office_location(chat_id, oid)
-
-                        # Consultation
-                        elif data_val == 'req_consult':
-                            self.request_consultation_prompt(chat_id)
-
-                        # Admin
-                        elif data_val == 'admin_recent_leads' and str(chat_id) == self.admin_chat_id:
-                            self.handle_admin_recent_leads(chat_id)
-                        elif data_val == 'admin_broadcast_prompt' and str(chat_id) == self.admin_chat_id:
-                            self.user_states[chat_id] = {'state': 'admin_broadcast_input'}
-                            self.send_message(chat_id, "Barcha foydalanuvchilarga yubormoqchi bo'lgan xabaringizni yozib yuboring:")
+                    self.handle_update(update)
 
             except CommandError:
                 raise
@@ -1887,15 +1917,27 @@ class Command(BaseCommand):
     help = 'Xon Saroy Telegram Botini ishga tushirish'
 
     def add_arguments(self, parser):
-        parser.add_argument(
+        mode = parser.add_mutually_exclusive_group()
+        mode.add_argument(
             '--check',
             action='store_true',
-            help='Token va polling sozlamalarini tekshiradi, botni ishga tushirmaydi.',
+            help='Telegram bot va webhook holatini tekshiradi.',
+        )
+        mode.add_argument(
+            '--set-webhook',
+            action='store_true',
+            help='Telegram webhookini sayt manziliga sozlaydi.',
+        )
+        mode.add_argument(
+            '--delete-webhook',
+            action='store_true',
+            help='Telegram webhookini o‘chirib, polling rejimiga qaytaradi.',
         )
 
     def handle(self, *args, **options):
         bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
         admin_chat_id = os.getenv('TELEGRAM_ADMIN_CHAT_ID', '').strip()
+        webhook_secret = os.getenv('TELEGRAM_WEBHOOK_SECRET', '').strip()
 
         if not bot_token:
             raise CommandError(".env faylida TELEGRAM_BOT_TOKEN topilmadi.")
@@ -1913,14 +1955,51 @@ class Command(BaseCommand):
                 f"Telegram webhook holatini tekshirib bo'lmadi: {webhook_info.get('description', 'API javob bermadi')}"
             )
         webhook_url = webhook_info.get('result', {}).get('url', '')
-        if webhook_url:
-            raise CommandError(
-                "Botda webhook sozlangan. Bu loyiha polling ishlatadi; webhookni o'chirib, "
-                "qayta `python manage.py runbot --check` buyrug'ini bajaring."
-            )
 
         username = bot_info.get('result', {}).get('username', "noma'lum")
-        status = f"Bot @{username} tokeni va polling sozlamalari to'g'ri."
+
+        if options['set_webhook']:
+            if not webhook_secret:
+                raise CommandError(".env faylida TELEGRAM_WEBHOOK_SECRET sozlanmagan.")
+            if (
+                not webhook_secret.isascii()
+                or not 1 <= len(webhook_secret) <= 256
+                or any(not (char.isalnum() or char in '_-') for char in webhook_secret)
+            ):
+                raise CommandError(
+                    "TELEGRAM_WEBHOOK_SECRET 1–256 ta lotin harfi, raqam, '_' yoki '-' dan iborat bo‘lsin."
+                )
+            site_url = urlparse(settings.SITE_URL)
+            if site_url.scheme != 'https' or not site_url.netloc:
+                raise CommandError("Telegram webhook uchun SITE_URL HTTPS manzil bo‘lishi kerak.")
+
+            target_url = f"{settings.SITE_URL.rstrip('/')}/telegram/webhook/"
+            response = bot.call_api('setWebhook', {
+                'url': target_url,
+                'secret_token': webhook_secret,
+                'allowed_updates': json.dumps(['message', 'callback_query']),
+            })
+            if not response.get('ok'):
+                raise CommandError(
+                    f"Telegram webhook o‘rnatilmadi: {response.get('description', 'API javob bermadi')}"
+                )
+            self.stdout.write(self.style.SUCCESS(f"Bot @{username} webhookga ulandi: {target_url}"))
+            return
+
+        if options['delete_webhook']:
+            response = bot.call_api('deleteWebhook')
+            if not response.get('ok'):
+                raise CommandError(
+                    f"Telegram webhook o‘chirilmadi: {response.get('description', 'API javob bermadi')}"
+                )
+            self.stdout.write(self.style.SUCCESS(f"Bot @{username} webhooki o‘chirildi."))
+            return
+
+        status = f"Bot @{username} tokeni to'g'ri."
+        if webhook_url:
+            status += f" Webhook faol: {webhook_url}"
+        else:
+            status += " Webhook sozlanmagan; polling rejimi faol emas."
         if admin_chat_id:
             status += " Admin xabarlari yoqilgan."
         else:
@@ -1928,6 +2007,12 @@ class Command(BaseCommand):
         if options['check']:
             self.stdout.write(self.style.SUCCESS(status))
             return
+
+        if webhook_url:
+            raise CommandError(
+                "Webhook faol. Telegram yangiliklari sayt orqali keladi; `runbot` polling jarayonini "
+                "alohida ishga tushirmang."
+            )
 
         self.stdout.write(self.style.SUCCESS(f"{status} Bot ishga tushmoqda..."))
         bot.run_polling()

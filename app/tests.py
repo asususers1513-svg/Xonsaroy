@@ -1,11 +1,12 @@
 import json
 import re
 from datetime import timedelta
-from io import BytesIO
+from io import BytesIO, StringIO
 from unittest.mock import patch
 
 from PIL import Image
 from django.core import mail
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
@@ -353,4 +354,86 @@ class TelegramBotApartmentPaginationTests(TestCase):
         report = mock_send_message.call_args.args[1]
         self.assertIn('1 ta foydalanuvchiga yuborildi', report)
         self.assertIn('1 ta foydalanuvchiga yuborilmadi', report)
+
+
+class TelegramWebhookTests(TestCase):
+    @patch.object(TelegramBot, 'answer_callback_query')
+    @patch.object(TelegramBot, 'send_message')
+    def test_webhook_checks_secret_and_persists_conversation_state(
+        self,
+        mock_send_message,
+        mock_answer_callback,
+    ):
+        update = {
+            'callback_query': {
+                'id': 'callback-1',
+                'from': {'id': 123456789, 'first_name': 'Ali'},
+                'message': {'chat': {'id': 123456789}},
+                'data': 'calc_pr_custom',
+            }
+        }
+
+        with patch.dict('os.environ', {
+            'TELEGRAM_BOT_TOKEN': 'test-token',
+            'TELEGRAM_WEBHOOK_SECRET': 'test-secret',
+        }):
+            rejected = self.client.post(
+                reverse('telegram_webhook'),
+                data=json.dumps(update),
+                content_type='application/json',
+                HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='wrong-secret',
+            )
+            self.assertEqual(rejected.status_code, 403)
+            self.assertFalse(BotUser.objects.exists())
+
+            accepted = self.client.post(
+                reverse('telegram_webhook'),
+                data=json.dumps(update),
+                content_type='application/json',
+                HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='test-secret',
+            )
+            follow_up = self.client.post(
+                reverse('telegram_webhook'),
+                data=json.dumps({
+                    'message': {
+                        'chat': {'id': 123456789},
+                        'from': {'id': 123456789, 'first_name': 'Ali'},
+                        'text': '500000000',
+                    }
+                }),
+                content_type='application/json',
+                HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='test-secret',
+            )
+
+        self.assertEqual(accepted.status_code, 200)
+        self.assertEqual(follow_up.status_code, 200)
+        bot_user = BotUser.objects.get(telegram_id='123456789')
+        self.assertEqual(
+            bot_user.conversation_state,
+            {'state': 'calc_step_down', 'price': 500000000.0},
+        )
+        mock_answer_callback.assert_called_once()
+        self.assertEqual(mock_send_message.call_count, 2)
+
+    @override_settings(SITE_URL='https://demo.pythonanywhere.com')
+    @patch.object(TelegramBot, 'call_api')
+    def test_management_command_sets_webhook_with_configured_secret(self, mock_call_api):
+        mock_call_api.side_effect = [
+            {'ok': True, 'result': {'username': 'demo_bot'}},
+            {'ok': True, 'result': {'url': ''}},
+            {'ok': True, 'result': True},
+        ]
+        output = StringIO()
+
+        with patch.dict('os.environ', {
+            'TELEGRAM_BOT_TOKEN': 'test-token',
+            'TELEGRAM_WEBHOOK_SECRET': 'test-secret',
+        }):
+            call_command('runbot', '--set-webhook', stdout=output)
+
+        mock_call_api.assert_called_with('setWebhook', {
+            'url': 'https://demo.pythonanywhere.com/telegram/webhook/',
+            'secret_token': 'test-secret',
+            'allowed_updates': json.dumps(['message', 'callback_query']),
+        })
 
