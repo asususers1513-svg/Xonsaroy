@@ -10,7 +10,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from app.models import User, Category, Home, Apartment, ApartmentReservation
+from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser
+from app.management.commands.runbot import TelegramBot
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
@@ -298,4 +299,58 @@ class RequirementsModelAndFilterTests(TestCase):
         self.assertEqual(payload['chat_id'], '987654321')
         self.assertIn('&lt;b&gt;Ali&lt;/b&gt;', payload['text'])
         self.assertIn('&lt;i&gt;Loyihada taklifim bor&lt;/i&gt;', payload['text'])
+
+
+class TelegramBotApartmentPaginationTests(TestCase):
+    def setUp(self):
+        self.project = Home.objects.create(name='Pagination project')
+        other_project = Home.objects.create(name='Other project')
+        for index in range(6):
+            Apartment.objects.create(
+                project=self.project,
+                rooms=2,
+                floor=index + 1,
+                area=50,
+                price=500000000,
+            )
+        Apartment.objects.create(
+            project=other_project,
+            rooms=2,
+            floor=1,
+            area=50,
+            price=500000000,
+        )
+        self.bot = TelegramBot(token='test-token')
+
+    @patch.object(TelegramBot, 'send_message')
+    def test_project_and_room_filters_are_kept_on_next_page(self, mock_send_message):
+        self.bot.handle_apartments_list(
+            '123456789',
+            project_id=self.project.id,
+            rooms=2,
+        )
+
+        markup = mock_send_message.call_args.kwargs['reply_markup']
+        next_page = markup['inline_keyboard'][-2][0]['callback_data']
+        self.assertEqual(next_page, f'aptpage_proj_{self.project.id}_rm_2_p2')
+        self.assertEqual(
+            self.bot._parse_aptpage_callback(next_page),
+            {'project_id': self.project.id, 'rooms': 2, 'page': 2},
+        )
+
+    @patch.object(TelegramBot, 'send_message')
+    def test_broadcast_report_counts_only_successful_sends(self, mock_send_message):
+        BotUser.objects.create(telegram_id='111')
+        BotUser.objects.create(telegram_id='222')
+        mock_send_message.side_effect = [
+            {'ok': True},
+            {'ok': False, 'description': 'blocked'},
+            {'ok': True},
+        ]
+
+        self.bot.broadcast_message('admin', 'Announcement')
+
+        report = mock_send_message.call_args.args[1]
+        self.assertIn('1 ta foydalanuvchiga yuborildi', report)
+        self.assertIn('1 ta foydalanuvchiga yuborilmadi', report)
 

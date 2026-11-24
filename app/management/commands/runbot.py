@@ -489,13 +489,35 @@ class TelegramBot:
         self.user_states = {}  # {chat_id: {'state': ..., 'data': ...}}
 
     def call_api(self, method, data=None, files=None):
-        try:
-            url = f"{self.api_url}/{method}"
-            resp = requests.post(url, data=data, files=files, timeout=35)
-            return resp.json()
-        except Exception:
-            logger.error("Telegram API so'rovi bajarilmadi (%s).", method)
-            return {'ok': False, 'description': 'Telegram API request failed.'}
+        url = f"{self.api_url}/{method}"
+        last_error = None
+
+        for attempt in range(1, 4):
+            try:
+                resp = requests.post(url, data=data, files=files, timeout=35)
+                return resp.json()
+            except requests.RequestException as err:
+                last_error = err
+                logger.warning(
+                    "Telegram API so'rovi bajarilmadi (%s), urinish %s/3: %s",
+                    method,
+                    attempt,
+                    type(err).__name__,
+                )
+                if attempt < 3:
+                    time.sleep(attempt * 2)
+            except Exception as err:
+                last_error = err
+                logger.error(
+                    "Telegram API javobi o'qilmadi (%s): %s",
+                    method,
+                    type(err).__name__,
+                )
+                break
+
+        if last_error:
+            logger.error("Telegram API so'rovi 3 urinishdan keyin bajarilmadi (%s).", method)
+        return {'ok': False, 'description': 'Telegram API request failed.'}
 
     def send_message(self, chat_id, text, reply_markup=None, parse_mode='HTML'):
         data = {
@@ -954,7 +976,9 @@ class TelegramBot:
 
         # Build filter suffix for callback
         filter_suffix = ""
-        if rooms:
+        if project_id and rooms:
+            filter_suffix = f"_proj_{project_id}_rm_{rooms}"
+        elif rooms:
             filter_suffix = f"_rm_{rooms}"
         elif project_id:
             filter_suffix = f"_proj_{project_id}"
@@ -1506,12 +1530,42 @@ class TelegramBot:
 
         self.send_message(chat_id, text)
 
+    def broadcast_message(self, chat_id, message):
+        sent_count = 0
+        failed_count = 0
+        users = BotUser.objects.values_list('telegram_id', flat=True)
+        for user_id in users:
+            response = self.send_message(user_id, message)
+            if response.get('ok'):
+                sent_count += 1
+            else:
+                failed_count += 1
+                logger.warning(
+                    "Broadcast xabari yuborilmadi (chat_id=%s): %s",
+                    user_id,
+                    response.get('description', 'noma’lum xato'),
+                )
+
+        self.send_message(
+            chat_id,
+            f"✅ Xabar {sent_count} ta foydalanuvchiga yuborildi. "
+            f"❌ {failed_count} ta foydalanuvchiga yuborilmadi.",
+        )
+
     # -----------------------------------------------------------------------
     # CALLBACK DATA PARSER for apartment pages
     # -----------------------------------------------------------------------
     def _parse_aptpage_callback(self, data_val):
         """Parse aptpage_<filter>_p<page> callback data."""
         import re
+        # aptpage_proj_<id>_rm_<n>_p<page>
+        m = re.match(r'aptpage_proj_(\d+)_rm_(\d+)_p(\d+)', data_val)
+        if m:
+            return {
+                'project_id': int(m.group(1)),
+                'rooms': int(m.group(2)),
+                'page': int(m.group(3)),
+            }
         # aptpage_rm_<n>_p<page>
         m = re.match(r'aptpage_rm_(\d+)_p(\d+)', data_val)
         if m:
@@ -1537,6 +1591,7 @@ class TelegramBot:
         import re
         logger.info("Telegram Bot ishga tushirildi! Polling boshlandi...")
         offset = 0
+        retry_delay = 3
 
         while True:
             try:
@@ -1547,6 +1602,7 @@ class TelegramBot:
                 )
                 resp.raise_for_status()
                 data = resp.json()
+                retry_delay = 3
                 if not data.get('ok'):
                     if data.get('error_code') in (401, 409):
                         raise CommandError(
@@ -1622,15 +1678,10 @@ class TelegramBot:
                         elif text.startswith('/broadcast') and str(chat_id) == self.admin_chat_id:
                             broadcast_msg = text.replace('/broadcast', '').strip()
                             if broadcast_msg:
-                                users = BotUser.objects.values_list('telegram_id', flat=True)
-                                sent_cnt = 0
-                                for uid in users:
-                                    try:
-                                        self.send_message(uid, f"📢 <b>XON SAROY YANGILIK:</b>\n\n{broadcast_msg}")
-                                        sent_cnt += 1
-                                    except Exception:
-                                        pass
-                                self.send_message(chat_id, f"✅ Xabar {sent_cnt} ta foydalanuvchiga yetkazildi.")
+                                self.broadcast_message(
+                                    chat_id,
+                                    f"📢 <b>XON SAROY YANGILIK:</b>\n\n{broadcast_msg}",
+                                )
                             else:
                                 self.send_message(chat_id, "Foydalanish: <code>/broadcast [xabar matni]</code>")
 
@@ -1651,16 +1702,8 @@ class TelegramBot:
                             self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', "Qo'lda kiritilgan telefon/xabar"))
 
                         elif self.user_states.get(chat_id, {}).get('state') == 'admin_broadcast_input' and str(chat_id) == self.admin_chat_id:
-                            users = BotUser.objects.values_list('telegram_id', flat=True)
-                            sent_cnt = 0
-                            for uid in users:
-                                try:
-                                    self.send_message(uid, f"📢 <b>XON SAROY:</b>\n\n{text}")
-                                    sent_cnt += 1
-                                except Exception:
-                                    pass
+                            self.broadcast_message(chat_id, f"📢 <b>XON SAROY:</b>\n\n{text}")
                             del self.user_states[chat_id]
-                            self.send_message(chat_id, f"✅ Xabar {sent_cnt} ta foydalanuvchiga yuborildi.")
 
                         else:
                             self.send_message(
@@ -1824,11 +1867,17 @@ class TelegramBot:
             except CommandError:
                 raise
             except requests.RequestException as err:
-                logger.error("Telegram polling so'rovi bajarilmadi (%s).", type(err).__name__)
-                time.sleep(3)
+                logger.warning(
+                    "Telegram polling so'rovi bajarilmadi (%s); %s soniyadan keyin qayta urinadi.",
+                    type(err).__name__,
+                    retry_delay,
+                )
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
             except Exception as err:
                 logger.exception("Polling loop exception (%s).", type(err).__name__)
-                time.sleep(3)
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
 
 
 # ---------------------------------------------------------------------------
