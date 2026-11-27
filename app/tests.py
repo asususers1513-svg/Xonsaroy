@@ -53,13 +53,21 @@ class TelegramFeatureTests(TestCase):
         self.bot = TelegramBot(token='test-token')
 
     @patch.object(TelegramBot, 'send_message')
-    def test_fixed_installment_calculator_uses_default_terms(self, send_message):
+    def test_installment_calculator_infers_percentage_from_down_payment(self, send_message):
         chat_id = 123456
         self.bot.handle_calc_fixed(chat_id, 300000000)
-        text = send_message.call_args.args[1]
-        self.assertIn('45 000 000', text)
-        self.assertIn('36 oy', text)
-        self.assertIn('7 083 333', text)
+        self.assertEqual(self.bot.user_states[chat_id]['state'], 'calc_down_amount')
+        self.bot.handle_calc_select_period(chat_id, 75000000)
+        self.assertEqual(self.bot.user_states[chat_id]['pct'], 25)
+        self.assertEqual(self.bot.user_states[chat_id]['down_sum'], 75000000)
+        self.assertIn('75 000 000', send_message.call_args.args[1])
+        self.assertIn('25%', send_message.call_args.args[1])
+
+    def test_main_keyboard_has_location_request_button(self):
+        keyboard = self.bot.get_main_keyboard(123456)
+        buttons = [button for row in keyboard['keyboard'] for button in row]
+        location_button = next(button for button in buttons if button.get('request_location'))
+        self.assertEqual(location_button['text'], '📍 Yaqin manzilni topish')
 
     @patch.object(TelegramBot, 'send_location')
     @patch.object(TelegramBot, 'send_message')
@@ -471,15 +479,43 @@ class TelegramWebhookTests(TestCase):
                 content_type='application/json',
                 HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='test-secret',
             )
+            down_payment = self.client.post(
+                reverse('telegram_webhook'),
+                data=json.dumps({
+                    'message': {
+                        'chat': {'id': 123456789},
+                        'from': {'id': 123456789, 'first_name': 'Ali'},
+                        'text': '100000000',
+                    }
+                }),
+                content_type='application/json',
+                HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='test-secret',
+            )
+            computed = self.client.post(
+                reverse('telegram_webhook'),
+                data=json.dumps({
+                    'callback_query': {
+                        'id': 'callback-2',
+                        'from': {'id': 123456789, 'first_name': 'Ali'},
+                        'message': {'chat': {'id': 123456789}},
+                        'data': 'calc_per_36',
+                    }
+                }),
+                content_type='application/json',
+                HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='test-secret',
+            )
 
         self.assertEqual(accepted.status_code, 200)
         self.assertEqual(follow_up.status_code, 200)
+        self.assertEqual(down_payment.status_code, 200)
+        self.assertEqual(computed.status_code, 200)
         bot_user = BotUser.objects.get(telegram_id='123456789')
         self.assertEqual(bot_user.conversation_state['state'], 'awaiting_contact')
         self.assertIn('Narx=500 000 000', bot_user.conversation_state['note'])
+        self.assertIn("Boshlang'ich=20%", bot_user.conversation_state['note'])
         self.assertIn('Muddat=36 oy', bot_user.conversation_state['note'])
-        mock_answer_callback.assert_called_once()
-        self.assertEqual(mock_send_message.call_count, 2)
+        self.assertEqual(mock_answer_callback.call_count, 2)
+        self.assertEqual(mock_send_message.call_count, 4)
 
     @override_settings(SITE_URL='https://demo.pythonanywhere.com')
     @patch.object(TelegramBot, 'call_api')

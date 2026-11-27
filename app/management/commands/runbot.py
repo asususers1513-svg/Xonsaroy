@@ -44,6 +44,7 @@ TEXTS = {
         'menu_website': '🌐 Veb-saytga o\u2018tish',
         'menu_lang': '🌐 Tilni o\u2018zgartirish',
         'menu_guide': '❓ Botdan foydalanish',
+        'menu_location': '📍 Yaqin manzilni topish',
         'menu_admin': '📊 Admin panel',
         'guide_text': (
             "📘 <b>XON SAROY BOT YO'RIQNOMASI</b>\n\n"
@@ -98,7 +99,12 @@ TEXTS = {
         ),
         'calc_down_prompt': (
             "💰 <b>Xonadon qiymati:</b> {price} so'm\n\n"
-            "Endi <b>boshlang'ich to'lov</b> foizini tanlang 👇"
+            "Boshlang'ich to'lov summasini so'mda yuboring. Foizini o'zimiz hisoblaymiz "
+            "(masalan: 100000000)."
+        ),
+        'calc_down_invalid': (
+            "Boshlang'ich to'lov 0 dan katta va xonadon narxidan oshmasligi kerak. "
+            "Summani so'mda qayta kiriting."
         ),
         'calc_period_prompt': (
             "💰 <b>Xonadon qiymati:</b> {price} so'm\n"
@@ -206,6 +212,7 @@ TEXTS = {
         'menu_website': '🌐 Перейти на сайт',
         'menu_lang': '🌐 Сменить язык',
         'menu_guide': '❓ Инструкция бота',
+        'menu_location': '📍 Найти ближайший объект',
         'menu_admin': '📊 Админ панель',
         'guide_text': (
             "📘 <b>ИНСТРУКЦИЯ ПО БОТУ XON SAROY</b>\n\n"
@@ -257,7 +264,12 @@ TEXTS = {
         ),
         'calc_down_prompt': (
             "💰 <b>Стоимость квартиры:</b> {price} сум\n\n"
-            "Выберите размер <b>первоначального взноса</b> 👇"
+            "Отправьте сумму первоначального взноса в сумах. Процент рассчитаем автоматически "
+            "(например: 100000000)."
+        ),
+        'calc_down_invalid': (
+            "Первоначальный взнос должен быть больше 0 и не превышать стоимость квартиры. "
+            "Введите сумму в сумах еще раз."
         ),
         'calc_period_prompt': (
             "💰 <b>Стоимость квартиры:</b> {price} сум\n"
@@ -365,6 +377,7 @@ TEXTS = {
         'menu_website': '🌐 Visit Website',
         'menu_lang': '🌐 Change Language',
         'menu_guide': '❓ Bot guide',
+        'menu_location': '📍 Find nearest place',
         'menu_admin': '📊 Admin Panel',
         'guide_text': (
             "📘 <b>XON SAROY BOT GUIDE</b>\n\n"
@@ -417,7 +430,12 @@ TEXTS = {
         ),
         'calc_down_prompt': (
             "💰 <b>Apartment Price:</b> {price} UZS\n\n"
-            "Select <b>down payment percentage</b> 👇"
+            "Send your down payment amount in UZS. We will calculate the percentage automatically "
+            "(for example: 100000000)."
+        ),
+        'calc_down_invalid': (
+            "The down payment must be greater than 0 and no more than the apartment price. "
+            "Enter the amount in UZS again."
         ),
         'calc_period_prompt': (
             "💰 <b>Apartment Price:</b> {price} UZS\n"
@@ -707,7 +725,8 @@ class TelegramBot:
             [{'text': t('menu_offices')}, {'text': t('menu_materials')}],
             [{'text': t('menu_reviews')}, {'text': t('menu_consult')}],
             [{'text': t('menu_profile')}, {'text': t('menu_website')}],
-            [{'text': t('menu_lang')}, {'text': t('menu_guide')}]
+            [{'text': t('menu_lang')}, {'text': t('menu_guide')}],
+            [{'text': t('menu_location'), 'request_location': True}]
         ]
         if str(chat_id) == self.admin_chat_id:
             kb.append([{'text': t('menu_admin')}])
@@ -1196,28 +1215,21 @@ class TelegramBot:
             self.send_message(chat_id, text, reply_markup=inline_kb)
 
     def handle_calc_select_down(self, chat_id, price):
-        self.user_states[chat_id] = {'state': 'calc_step_down', 'price': float(price)}
+        self.user_states[chat_id] = {'state': 'calc_down_amount', 'price': float(price)}
         text = self.t(chat_id, 'calc_down_prompt', price=fmt_sum(price))
+        self.send_message(chat_id, text)
 
-        inline_kb = {
-            'inline_keyboard': [
-                [{'text': '15%', 'callback_data': 'calc_down_15'},
-                 {'text': '20%', 'callback_data': 'calc_down_20'}],
-                [{'text': '30%', 'callback_data': 'calc_down_30'},
-                 {'text': '50%', 'callback_data': 'calc_down_50'}],
-                [{'text': '🔄 ' + ('Boshqa summa' if self.get_lang(chat_id) == 'uz' else ('Другая сумма' if self.get_lang(chat_id) == 'ru' else 'Other amount')),
-                  'callback_data': 'calc_start'}]
-            ]
-        }
-        self.send_message(chat_id, text, reply_markup=inline_kb)
-
-    def handle_calc_select_period(self, chat_id, pct):
+    def handle_calc_select_period(self, chat_id, down_sum):
         state = self.user_states.get(chat_id, {})
         price = state.get('price', 500000000.0)
-        down_sum = price * (float(pct) / 100.0)
+        down_sum = float(down_sum)
+        pct = round((down_sum / price) * 100, 2)
+        if pct.is_integer():
+            pct = int(pct)
         self.user_states[chat_id] = {'state': 'calc_step_period', 'price': price, 'pct': pct, 'down_sum': down_sum}
 
-        text = self.t(chat_id, 'calc_period_prompt', price=fmt_sum(price), pct=pct, down_sum=fmt_sum(down_sum))
+        pct_display = f'{pct:g}' if isinstance(pct, float) else str(pct)
+        text = self.t(chat_id, 'calc_period_prompt', price=fmt_sum(price), pct=pct_display, down_sum=fmt_sum(down_sum))
         inline_kb = {
             'inline_keyboard': [
                 [{'text': '12 oy (1 yil)', 'callback_data': 'calc_per_12'},
@@ -1266,37 +1278,7 @@ class TelegramBot:
         self.send_message(chat_id, text, reply_markup=inline_kb)
 
     def handle_calc_fixed(self, chat_id, price):
-        pct = 15
-        period = 36
-        down_sum = float(price) * (pct / 100)
-        rem_sum = float(price) - down_sum
-        monthly = rem_sum / period
-
-        text = self.t(
-            chat_id, 'calc_result',
-            price=fmt_sum(price),
-            pct=pct,
-            down_sum=fmt_sum(down_sum),
-            rem_sum=fmt_sum(rem_sum),
-            period=period,
-            monthly=fmt_sum(monthly)
-        )
-
-        note_data = f"Kalkulyator: Narx={fmt_sum(price)}, Boshlang'ich={pct}% ({fmt_sum(down_sum)}), Muddat={period} oy, Oylik={fmt_sum(monthly)}"
-        self.user_states[chat_id] = {'state': 'awaiting_contact', 'note': note_data}
-
-        lang = self.get_lang(chat_id)
-        btn_consult = '📞 Ushbu shartlarda ariza qoldirish' if lang == 'uz' else ('📞 Оставить заявку' if lang == 'ru' else '📞 Apply with these terms')
-        btn_restart = '🔄 Qaytadan hisoblash' if lang == 'uz' else ('🔄 Рассчитать заново' if lang == 'ru' else '🔄 Recalculate')
-        btn_apts = '🔑 Xonadonlarni ko\u2018rish' if lang == 'uz' else ('🔑 Смотреть квартиры' if lang == 'ru' else '🔑 View apartments')
-        inline_kb = {
-            'inline_keyboard': [
-                [{'text': btn_consult, 'callback_data': 'req_consult'}],
-                [{'text': btn_apts, 'callback_data': 'apts_menu'}],
-                [{'text': btn_restart, 'callback_data': 'calc_start'}]
-            ]
-        }
-        self.send_message(chat_id, text, reply_markup=inline_kb)
+        self.handle_calc_select_down(chat_id, float(price))
 
     # -----------------------------------------------------------------------
     # HANDLERS: OFFICES & LOCATIONS
@@ -1834,6 +1816,16 @@ class TelegramBot:
                     else:
                         self.send_message(chat_id, "Iltimos, to'g'ri summa kiriting (masalan: 500000000):")
 
+                elif self.user_states.get(chat_id, {}).get('state') == 'calc_down_amount':
+                    digits = ''.join(c for c in text if c.isdigit())
+                    state = self.user_states[chat_id]
+                    down_sum = float(digits) if digits else 0
+                    price = float(state['price'])
+                    if 0 < down_sum <= price:
+                        self.handle_calc_select_period(chat_id, down_sum)
+                    else:
+                        self.send_message(chat_id, self.t(chat_id, 'calc_down_invalid'))
+
                 elif self.user_states.get(chat_id, {}).get('state') == 'awaiting_contact':
                     self.process_lead(chat_id, user, text, self.user_states.get(chat_id, {}).get('note', "Qo'lda kiritilgan telefon/xabar"))
 
@@ -1978,7 +1970,8 @@ class TelegramBot:
                         self.handle_calc_fixed(chat_id, float(pr_val))
                 elif data_val.startswith('calc_down_'):
                     pct_val = int(data_val.replace('calc_down_', ''))
-                    self.handle_calc_select_period(chat_id, pct_val)
+                    price = self.user_states.get(chat_id, {}).get('price', 500000000.0)
+                    self.handle_calc_select_period(chat_id, float(price) * pct_val / 100)
                 elif data_val.startswith('calc_per_'):
                     per_val = int(data_val.replace('calc_per_', ''))
                     self.handle_calc_compute(chat_id, per_val)
