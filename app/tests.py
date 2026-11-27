@@ -11,8 +11,41 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser
+from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser, PasswordResetCode
 from app.management.commands.runbot import TelegramBot
+
+
+class PasswordResetDeliveryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='reset-user',
+            email='reset@example.com',
+            password='OldPassword123',
+            telegram_id='123456789',
+        )
+
+    def test_profile_saves_email_and_telegram_id(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('profile'), {
+            'email': 'new-reset@example.com',
+            'telegram_id': '987654321',
+        })
+        self.assertRedirects(response, reverse('profile'))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'new-reset@example.com')
+        self.assertEqual(self.user.telegram_id, '987654321')
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    @patch('app.views.send_password_reset_code_telegram', return_value=(False, 'Telegram chat ID topilmadi.'))
+    def test_password_reset_request_sends_email_code(self, telegram_send):
+        response = self.client.post(reverse('password_reset_request'), {
+            'email': self.user.email,
+        })
+        self.assertRedirects(response, reverse('password_reset_confirm'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+        reset_code = PasswordResetCode.objects.get(user=self.user, is_used=False)
+        self.assertIn(reset_code.code, mail.outbox[0].body)
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])

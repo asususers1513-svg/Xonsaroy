@@ -653,12 +653,14 @@ def password_reset_request_view(request):
 				send_err = None
 
 				try:
-					send_password_reset_code_email(reset_code)
-					email_sent = True
+					email_sent = send_password_reset_code_email(reset_code) > 0
 				except Exception as e:
 					send_err = str(e)
+					logger.exception("Parol tiklash kodi emailinga yuborilmadi: %s", reset_code.email)
 
-				tg_sent, _ = send_password_reset_code_telegram(reset_code)
+				tg_sent, tg_err = send_password_reset_code_telegram(reset_code)
+				if not tg_sent:
+					logger.warning("Parol tiklash kodi Telegramga yuborilmadi: %s", tg_err)
 
 				request.session['password_reset_email'] = email
 
@@ -668,25 +670,20 @@ def password_reset_request_view(request):
 						request,
 						f"{email} pochtangizga va Telegramingizga 6 xonali tasdiqlash kodi yuborildi. Kod 10 daqiqa davomida amal qiladi."
 					)
-				elif tg_sent and not is_live_smtp:
+				elif email_sent and is_live_smtp:
 					messages.success(
 						request,
-						f"Telegramingizga va pochtangizga 6 xonali tasdiqlash kodi yuborildi! Kod 10 daqiqa amal qiladi."
+						f"{email} pochtangizga 6 xonali tasdiqlash kodi yuborildi. Kod 10 daqiqa davomida amal qiladi."
 					)
 				elif tg_sent:
 					messages.success(
 						request,
 						f"Telegramingizga 6 xonali tasdiqlash kodi yuborildi! Kod 10 daqiqa amal qiladi."
 					)
-				elif email_sent and is_live_smtp:
-					messages.success(
-						request,
-						f"{email} Gmail pochtangizga 6 xonali tasdiqlash kodi yuborildi. Kod 10 daqiqa davomida amal qiladi."
-					)
 				else:
-					messages.success(
+					messages.error(
 						request,
-						f"{email} manziliga tasdiqlash kodi yuborish uchun Telegram yoki Gmail xabarini tekshiring. Kod 10 daqiqa davomida amal qiladi."
+						"Tasdiqlash kodini yuborib bo'lmadi. Email va Telegram sozlamalarini tekshirib, qayta urinib ko'ring."
 					)
 
 				return redirect('password_reset_confirm')
@@ -770,12 +767,14 @@ def password_reset_resend_view(request):
 	send_err = None
 
 	try:
-		send_password_reset_code_email(reset_code)
-		email_sent = True
+		email_sent = send_password_reset_code_email(reset_code) > 0
 	except Exception as e:
 		send_err = str(e)
+		logger.exception("Parol tiklash kodini qayta emailinga yuborib bo'lmadi: %s", reset_code.email)
 
-	tg_sent, _ = send_password_reset_code_telegram(reset_code)
+	tg_sent, tg_err = send_password_reset_code_telegram(reset_code)
+	if not tg_sent:
+		logger.warning("Parol tiklash kodini qayta Telegramga yuborib bo'lmadi: %s", tg_err)
 
 	request.session['password_reset_email'] = email
 

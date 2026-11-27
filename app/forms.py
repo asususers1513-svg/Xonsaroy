@@ -41,11 +41,20 @@ class UserProfileForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if 'email' in self.fields:
-			self.fields['email'].required = False
+			self.fields['email'].required = True
 		if 'telegram_id' in self.fields:
 			self.fields['telegram_id'].required = False
 		if 'avatar' in self.fields:
 			self.fields['avatar'].required = False
+
+	def clean_email(self):
+		email = (self.cleaned_data.get('email') or '').strip().lower()
+		if not email:
+			raise forms.ValidationError('Elektron pochta manzilini kiriting.')
+		other_user = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists()
+		if other_user:
+			raise forms.ValidationError('Bu elektron pochta boshqa hisobda ishlatilmoqda.')
+		return email
 
 	def clean_telegram_id(self):
 		telegram_id = (self.cleaned_data.get('telegram_id') or '').strip()
