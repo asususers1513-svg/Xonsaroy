@@ -7,6 +7,8 @@
     <meta name="theme-color" content="#f4f4f1">
     <title>Xon Saroy — turar joy majmualari</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="{% static 'css/home.css' %}?v=10">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=12">
 </head>
@@ -206,6 +208,70 @@
 
         <a class="all-projects" data-status="all" href="?status=all#projects"><span data-i18n="allProjects">Barchasini ko‘rsatish</span><span class="all-projects-arrow" aria-hidden="true">↗</span></a>
     </main>
+
+    <section class="projects-map-section" id="projects-map" aria-labelledby="projects-map-title">
+        <div class="wide-section-heading">
+            <div>
+                <h2 id="projects-map-title">Xon Saroy loyihalari xaritada</h2>
+                <p>Xaritadan loyihalarni ko‘ring. Har bir belgi alohida rangli loyiha joylashuvini bildiradi.</p>
+            </div>
+        </div>
+        <div class="projects-map-layout">
+            <div id="projects-map-canvas" class="projects-map-canvas" aria-label="Xon Saroy loyihalari xaritasi"></div>
+            <div class="projects-map-list">
+                {% for home in homes %}
+                    {% if home.latitude and home.longitude %}
+                        <button type="button"
+                                class="projects-map-item"
+                                data-lat="{{ home.latitude }}"
+                                data-lng="{{ home.longitude }}"
+                                data-name="{{ home.name }}">
+                            <span class="projects-map-marker"></span>
+                            <span><strong>{{ home.name }}</strong><small>{{ home.get_status_display }}</small></span>
+                        </button>
+                    {% endif %}
+                {% empty %}
+                    <p>Hozircha xarita koordinatalari kiritilmagan.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    <script>
+        (() => {
+            const canvas = document.getElementById('projects-map-canvas');
+            if (!canvas || typeof window.L === 'undefined') return;
+
+            const map = window.L.map(canvas, { scrollWheelZoom: false }).setView([41.311081, 69.240562], 11);
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            const colors = ['#5c4683', '#e15d44', '#2f9e74', '#3977b7', '#d49a28', '#a64d79'];
+            const bounds = [];
+            document.querySelectorAll('.projects-map-item').forEach((item, index) => {
+                const lat = Number(item.dataset.lat);
+                const lng = Number(item.dataset.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                const color = colors[index % colors.length];
+                item.querySelector('.projects-map-marker').style.background = color;
+                const marker = window.L.circleMarker([lat, lng], {
+                    radius: 9,
+                    color: '#ffffff',
+                    weight: 2,
+                    fillColor: color,
+                    fillOpacity: 0.95
+                }).addTo(map).bindPopup(item.dataset.name);
+                bounds.push([lat, lng]);
+                item.addEventListener('click', () => {
+                    map.setView([lat, lng], 14);
+                    marker.openPopup();
+                });
+            });
+            if (bounds.length > 1) map.fitBounds(bounds, { padding: [35, 35] });
+            if (bounds.length === 1) map.setView(bounds[0], 14);
+        })();
+    </script>
 
     <section class="contact-section contact-question" id="contact-question">
         <h2 id="contact-title">Savollaringiz bormi?</h2>

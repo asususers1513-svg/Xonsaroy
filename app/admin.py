@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils import timezone
 from .models import User, Category, Home, Apartment, ApartmentImage, ApartmentReservation, Material, Client, SalesOffice, PasswordResetCode, BotUser, Lead
 
 
@@ -23,11 +24,11 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Home)
 class HomeAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'status', 'created_at')
+	list_display = ('name', 'category', 'status', 'latitude', 'longitude', 'created_at')
 	list_filter = ('status', 'category')
 	list_editable = ('status',)
 	search_fields = ('name', 'description')
-	fields = ('name', 'category', 'image', 'hero_image', 'status', 'description')
+	fields = ('name', 'category', 'image', 'hero_image', 'status', 'description', 'latitude', 'longitude')
 
 
 class ApartmentImageInline(admin.TabularInline):
@@ -51,6 +52,45 @@ class ApartmentReservationAdmin(admin.ModelAdmin):
 	list_filter = ('status', 'created_at')
 	search_fields = ('name', 'email', 'phone', 'apartment__project__name')
 	readonly_fields = ('public_id', 'apartment', 'name', 'email', 'phone', 'code_hash', 'attempts', 'created_at', 'expires_at', 'confirmed_at')
+	list_editable = ('status',)
+	actions = ('confirm_reservation', 'cancel_reservation')
+
+	def save_model(self, request, obj, form, change):
+		super().save_model(request, obj, form, change)
+		obj.apartment.availability = (
+			obj.apartment.Availability.RESERVED
+			if obj.status in (obj.Status.PENDING, obj.Status.CONFIRMED)
+			else obj.apartment.Availability.AVAILABLE
+			if obj.status == obj.Status.EXPIRED
+			else obj.apartment.availability
+		)
+		obj.apartment.save(update_fields=['availability'])
+
+	@admin.action(description='Tanlangan bronni tasdiqlash')
+	def confirm_reservation(self, request, queryset):
+		now = timezone.now()
+		updated = 0
+		for reservation in queryset.select_related('apartment'):
+			reservation.status = reservation.Status.CONFIRMED
+			reservation.confirmed_at = now
+			reservation.save(update_fields=['status', 'confirmed_at'])
+			reservation.apartment.availability = reservation.apartment.Availability.RESERVED
+			reservation.apartment.save(update_fields=['availability'])
+			updated += 1
+		self.message_user(request, f'{updated} ta bron tasdiqlandi.')
+
+	@admin.action(description='Tanlangan bronni bekor qilish')
+	def cancel_reservation(self, request, queryset):
+		now = timezone.now()
+		updated = 0
+		for reservation in queryset.select_related('apartment'):
+			reservation.status = reservation.Status.EXPIRED
+			reservation.confirmed_at = None
+			reservation.save(update_fields=['status', 'confirmed_at'])
+			reservation.apartment.availability = reservation.apartment.Availability.AVAILABLE
+			reservation.apartment.save(update_fields=['availability'])
+			updated += 1
+		self.message_user(request, f'{updated} ta bron bekor qilindi.')
 
 
 @admin.register(Material)

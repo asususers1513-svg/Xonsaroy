@@ -11,7 +11,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser, PasswordResetCode
+from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser, PasswordResetCode, SalesOffice
 from app.management.commands.runbot import TelegramBot
 
 
@@ -46,6 +46,40 @@ class PasswordResetDeliveryTests(TestCase):
         self.assertEqual(mail.outbox[0].to, [self.user.email])
         reset_code = PasswordResetCode.objects.get(user=self.user, is_used=False)
         self.assertIn(reset_code.code, mail.outbox[0].body)
+
+
+class TelegramFeatureTests(TestCase):
+    def setUp(self):
+        self.bot = TelegramBot(token='test-token')
+
+    @patch.object(TelegramBot, 'send_message')
+    def test_fixed_installment_calculator_uses_default_terms(self, send_message):
+        chat_id = 123456
+        self.bot.handle_calc_fixed(chat_id, 300000000)
+        text = send_message.call_args.args[1]
+        self.assertIn('45 000 000', text)
+        self.assertIn('36 oy', text)
+        self.assertIn('7 083 333', text)
+
+    @patch.object(TelegramBot, 'send_location')
+    @patch.object(TelegramBot, 'send_message')
+    def test_location_finds_nearest_office_and_project(self, send_message, send_location):
+        office = SalesOffice.objects.create(
+            name='Yaqin ofis',
+            address='Toshkent',
+            latitude=41.311081,
+            longitude=69.240562,
+        )
+        home = Home.objects.create(
+            name='Yaqin loyiha',
+            latitude=41.320000,
+            longitude=69.250000,
+        )
+        self.bot.handle_nearest_location(123456, 41.311081, 69.240562)
+        self.assertGreaterEqual(send_location.call_count, 2)
+        sent_text = send_message.call_args.args[1]
+        self.assertIn(office.name, sent_text)
+        self.assertIn(home.name, sent_text)
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
@@ -441,10 +475,9 @@ class TelegramWebhookTests(TestCase):
         self.assertEqual(accepted.status_code, 200)
         self.assertEqual(follow_up.status_code, 200)
         bot_user = BotUser.objects.get(telegram_id='123456789')
-        self.assertEqual(
-            bot_user.conversation_state,
-            {'state': 'calc_step_down', 'price': 500000000.0},
-        )
+        self.assertEqual(bot_user.conversation_state['state'], 'awaiting_contact')
+        self.assertIn('Narx=500 000 000', bot_user.conversation_state['note'])
+        self.assertIn('Muddat=36 oy', bot_user.conversation_state['note'])
         mock_answer_callback.assert_called_once()
         self.assertEqual(mock_send_message.call_count, 2)
 

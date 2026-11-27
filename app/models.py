@@ -75,6 +75,20 @@ class Home(models.Model):
 	hero_image_url = models.URLField(blank=True, editable=False)
 	status = models.CharField(max_length=20, choices=Status.choices, default=Status.IN_PROGRESS)
 	description = models.TextField(blank=True)
+	latitude = models.DecimalField(
+		max_digits=9,
+		decimal_places=6,
+		null=True,
+		blank=True,
+		verbose_name='Loyiha kengligi'
+	)
+	longitude = models.DecimalField(
+		max_digits=9,
+		decimal_places=6,
+		null=True,
+		blank=True,
+		verbose_name='Loyiha uzunligi'
+	)
 	created_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:

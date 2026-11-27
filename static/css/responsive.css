@@ -636,3 +636,39 @@ iframe {
         scroll-behavior: auto;
     }
 }
+
+@media (max-width: 900px) {
+    .projects-map-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .projects-map-canvas {
+        min-height: 340px;
+    }
+
+    .projects-map-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .projects-map-section {
+        padding: 44px 20px;
+    }
+
+    .projects-map-canvas {
+        min-height: 300px;
+        border-radius: 14px;
+    }
+
+    .projects-map-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .client-card {
+        height: 220px;
+        min-height: 220px;
+        flex-basis: calc((100% - 12px) / 2);
+    }
+}

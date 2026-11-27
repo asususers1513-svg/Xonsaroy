@@ -5,6 +5,7 @@ import json
 import logging
 import requests
 import html
+import math
 from urllib.parse import urlparse
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -42,7 +43,18 @@ TEXTS = {
         'menu_profile': '👤 Mening profilim',
         'menu_website': '🌐 Veb-saytga o\u2018tish',
         'menu_lang': '🌐 Tilni o\u2018zgartirish',
+        'menu_guide': '❓ Botdan foydalanish',
         'menu_admin': '📊 Admin panel',
+        'guide_text': (
+            "📘 <b>XON SAROY BOT YO'RIQNOMASI</b>\n\n"
+            "1️⃣ <b>Loyihalarimiz</b> — majmualar haqida ma'lumot\n"
+            "2️⃣ <b>Xonadonlar</b> — bo'sh uylarni ko'rish va narxlarni solishtirish\n"
+            "3️⃣ <b>Kalkulyator</b> — summani yozing, boshlang'ich to'lov va oylik to'lov avtomatik hisoblanadi\n"
+            "4️⃣ <b>Sotuv ofislari</b> — ofislar ro'yxati va lokatsiyalari\n"
+            "5️⃣ <b>Lokatsiya</b> — Telegramdan joylashuvni yuboring, eng yaqin ofis va loyiha ko'rsatiladi\n"
+            "6️⃣ <b>Konsultatsiya</b> — telefon yoki kontakt orqali ariza qoldirish\n\n"
+            "Boshlash uchun /start, qayta hisoblash uchun /calc buyrug'ini yuboring."
+        ),
         'btn_back': '⬅️ Asosiy menyu',
         'btn_share_contact': '📱 Telefon raqamimni yuborish',
         'about_text': (
@@ -193,7 +205,18 @@ TEXTS = {
         'menu_profile': '👤 Мой профиль',
         'menu_website': '🌐 Перейти на сайт',
         'menu_lang': '🌐 Сменить язык',
+        'menu_guide': '❓ Инструкция бота',
         'menu_admin': '📊 Админ панель',
+        'guide_text': (
+            "📘 <b>ИНСТРУКЦИЯ ПО БОТУ XON SAROY</b>\n\n"
+            "1️⃣ <b>Проекты</b> — информация о жилых комплексах\n"
+            "2️⃣ <b>Квартиры</b> — поиск свободных квартир и сравнение цен\n"
+            "3️⃣ <b>Калькулятор</b> — введите сумму, первоначальный взнос и ежемесячный платеж будут рассчитаны автоматически\n"
+            "4️⃣ <b>Офисы продаж</b> — список офисов и локации\n"
+            "5️⃣ <b>Геолокация</b> — отправьте свое местоположение, бот покажет ближайший офис и проект\n"
+            "6️⃣ <b>Консультация</b> — оставьте заявку по телефону или через контакт\n\n"
+            "Для начала отправьте /start, для расчета — /calc."
+        ),
         'btn_back': '⬅️ Главное меню',
         'btn_share_contact': '📱 Отправить номер телефона',
         'about_text': (
@@ -341,7 +364,18 @@ TEXTS = {
         'menu_profile': '👤 My Profile',
         'menu_website': '🌐 Visit Website',
         'menu_lang': '🌐 Change Language',
+        'menu_guide': '❓ Bot guide',
         'menu_admin': '📊 Admin Panel',
+        'guide_text': (
+            "📘 <b>XON SAROY BOT GUIDE</b>\n\n"
+            "1️⃣ <b>Projects</b> — view residential complexes\n"
+            "2️⃣ <b>Apartments</b> — find available homes and compare prices\n"
+            "3️⃣ <b>Calculator</b> — enter an amount to calculate the down payment and monthly payment automatically\n"
+            "4️⃣ <b>Sales offices</b> — view offices and locations\n"
+            "5️⃣ <b>Location</b> — share your location to find the nearest office and project\n"
+            "6️⃣ <b>Consultation</b> — submit a request using a phone number or Telegram contact\n\n"
+            "Send /start to begin or /calc to calculate."
+        ),
         'btn_back': '⬅️ Main Menu',
         'btn_share_contact': '📱 Share Phone Number',
         'about_text': (
@@ -673,7 +707,7 @@ class TelegramBot:
             [{'text': t('menu_offices')}, {'text': t('menu_materials')}],
             [{'text': t('menu_reviews')}, {'text': t('menu_consult')}],
             [{'text': t('menu_profile')}, {'text': t('menu_website')}],
-            [{'text': t('menu_lang')}]
+            [{'text': t('menu_lang')}, {'text': t('menu_guide')}]
         ]
         if str(chat_id) == self.admin_chat_id:
             kb.append([{'text': t('menu_admin')}])
@@ -1157,7 +1191,7 @@ class TelegramBot:
         inline_kb = {'inline_keyboard': btn_rows}
 
         if default_price:
-            self.handle_calc_select_down(chat_id, float(default_price))
+            self.handle_calc_fixed(chat_id, float(default_price))
         else:
             self.send_message(chat_id, text, reply_markup=inline_kb)
 
@@ -1231,6 +1265,39 @@ class TelegramBot:
         }
         self.send_message(chat_id, text, reply_markup=inline_kb)
 
+    def handle_calc_fixed(self, chat_id, price):
+        pct = 15
+        period = 36
+        down_sum = float(price) * (pct / 100)
+        rem_sum = float(price) - down_sum
+        monthly = rem_sum / period
+
+        text = self.t(
+            chat_id, 'calc_result',
+            price=fmt_sum(price),
+            pct=pct,
+            down_sum=fmt_sum(down_sum),
+            rem_sum=fmt_sum(rem_sum),
+            period=period,
+            monthly=fmt_sum(monthly)
+        )
+
+        note_data = f"Kalkulyator: Narx={fmt_sum(price)}, Boshlang'ich={pct}% ({fmt_sum(down_sum)}), Muddat={period} oy, Oylik={fmt_sum(monthly)}"
+        self.user_states[chat_id] = {'state': 'awaiting_contact', 'note': note_data}
+
+        lang = self.get_lang(chat_id)
+        btn_consult = '📞 Ushbu shartlarda ariza qoldirish' if lang == 'uz' else ('📞 Оставить заявку' if lang == 'ru' else '📞 Apply with these terms')
+        btn_restart = '🔄 Qaytadan hisoblash' if lang == 'uz' else ('🔄 Рассчитать заново' if lang == 'ru' else '🔄 Recalculate')
+        btn_apts = '🔑 Xonadonlarni ko\u2018rish' if lang == 'uz' else ('🔑 Смотреть квартиры' if lang == 'ru' else '🔑 View apartments')
+        inline_kb = {
+            'inline_keyboard': [
+                [{'text': btn_consult, 'callback_data': 'req_consult'}],
+                [{'text': btn_apts, 'callback_data': 'apts_menu'}],
+                [{'text': btn_restart, 'callback_data': 'calc_start'}]
+            ]
+        }
+        self.send_message(chat_id, text, reply_markup=inline_kb)
+
     # -----------------------------------------------------------------------
     # HANDLERS: OFFICES & LOCATIONS
     # -----------------------------------------------------------------------
@@ -1289,6 +1356,68 @@ class TelegramBot:
                 self.send_message(chat_id, f"📍 <b>{o.name}</b>\nManzil: {o.address}\n\n(Lokatsiya koordinatalari mavjud emas)")
         except SalesOffice.DoesNotExist:
             self.send_message(chat_id, "Sotuv ofisi topilmadi.")
+
+    def handle_nearest_location(self, chat_id, latitude, longitude):
+        user_lat = float(latitude)
+        user_lng = float(longitude)
+
+        def distance_km(lat, lng):
+            earth_radius = 6371
+            lat1 = math.radians(user_lat)
+            lat2 = math.radians(float(lat))
+            delta_lat = math.radians(float(lat) - user_lat)
+            delta_lng = math.radians(float(lng) - user_lng)
+            a = (
+                math.sin(delta_lat / 2) ** 2
+                + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lng / 2) ** 2
+            )
+            return earth_radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        nearest_office = None
+        nearest_office_distance = None
+        for office in SalesOffice.objects.exclude(latitude=None).exclude(longitude=None):
+            distance = distance_km(office.latitude, office.longitude)
+            if nearest_office_distance is None or distance < nearest_office_distance:
+                nearest_office = office
+                nearest_office_distance = distance
+
+        nearest_home = None
+        nearest_home_distance = None
+        for home in Home.objects.exclude(latitude=None).exclude(longitude=None):
+            distance = distance_km(home.latitude, home.longitude)
+            if nearest_home_distance is None or distance < nearest_home_distance:
+                nearest_home = home
+                nearest_home_distance = distance
+
+        lang = self.get_lang(chat_id)
+        lines = []
+        if lang == 'uz':
+            lines.append("📍 <b>Sizning lokatsiyangiz asosida eng yaqin manzillar:</b>")
+        elif lang == 'ru':
+            lines.append("📍 <b>Ближайшие объекты по вашей геолокации:</b>")
+        else:
+            lines.append("📍 <b>Nearest places based on your location:</b>")
+
+        if nearest_office:
+            lines.append(
+                f"\n🏢 <b>{nearest_office.name}</b> — "
+                f"{nearest_office_distance:.1f} km"
+                f"\n📍 {nearest_office.address}"
+            )
+            self.send_location(chat_id, nearest_office.latitude, nearest_office.longitude)
+        else:
+            lines.append("\n🏢 Sotuv ofisi koordinatasi hali kiritilmagan.")
+
+        if nearest_home:
+            lines.append(
+                f"\n🏗 <b>{nearest_home.name}</b> — "
+                f"{nearest_home_distance:.1f} km"
+            )
+            self.send_location(chat_id, nearest_home.latitude, nearest_home.longitude)
+        else:
+            lines.append("\n🏗 Loyiha koordinatasi hali kiritilmagan.")
+
+        self.send_message(chat_id, "\n".join(lines), reply_markup=self.get_main_keyboard(chat_id))
 
     # -----------------------------------------------------------------------
     # HANDLERS: MATERIALS & QUALITY
@@ -1620,6 +1749,15 @@ class TelegramBot:
 
                 self.get_or_create_user(user)
 
+                if 'location' in msg:
+                    location = msg['location']
+                    self.handle_nearest_location(
+                        chat_id,
+                        location.get('latitude'),
+                        location.get('longitude'),
+                    )
+                    return
+
                 # Contact sharing
                 if 'contact' in msg:
                     contact = msg['contact']
@@ -1685,11 +1823,14 @@ class TelegramBot:
                         del self.user_states[chat_id]
                     self.send_message(chat_id, "Asosiy menyudasiz 👇", reply_markup=self.get_main_keyboard(chat_id))
 
+                elif text in ('❓ Botdan foydalanish', '❓ Инструкция бота', '❓ Bot guide', '/guide', '/help'):
+                    self.send_message(chat_id, self.t(chat_id, 'guide_text'), reply_markup=self.get_main_keyboard(chat_id))
+
                 elif self.user_states.get(chat_id, {}).get('state') == 'calc_custom_amount':
                     digits = ''.join(c for c in text if c.isdigit())
                     if digits and int(digits) > 10000000:
                         val = float(digits)
-                        self.handle_calc_select_down(chat_id, val)
+                        self.handle_calc_fixed(chat_id, val)
                     else:
                         self.send_message(chat_id, "Iltimos, to'g'ri summa kiriting (masalan: 500000000):")
 
@@ -1834,7 +1975,7 @@ class TelegramBot:
                         self.user_states[chat_id] = {'state': 'calc_custom_amount'}
                         self.send_message(chat_id, "Iltimos, xonadon narxini so'mda yozib yuboring (masalan: 450000000):")
                     elif pr_val.isdigit():
-                        self.handle_calc_select_down(chat_id, float(pr_val))
+                        self.handle_calc_fixed(chat_id, float(pr_val))
                 elif data_val.startswith('calc_down_'):
                     pct_val = int(data_val.replace('calc_down_', ''))
                     self.handle_calc_select_period(chat_id, pct_val)
