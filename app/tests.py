@@ -6,12 +6,16 @@ from unittest.mock import patch
 
 from PIL import Image
 from django.core import mail
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password
 from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from app.models import User, Category, Home, Apartment, ApartmentReservation, BotUser, PasswordResetCode, SalesOffice
+from app.admin import ApartmentReservationAdmin, PasswordResetCodeAdmin
+from app.forms import PasswordResetConfirmForm
 from app.management.commands.runbot import TelegramBot
 
 
@@ -45,7 +49,53 @@ class PasswordResetDeliveryTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [self.user.email])
         reset_code = PasswordResetCode.objects.get(user=self.user, is_used=False)
-        self.assertIn(reset_code.code, mail.outbox[0].body)
+        raw_code = re.search(r'(?<!\d)\d{6}(?!\d)', mail.outbox[0].body).group()
+        self.assertTrue(check_password(raw_code, reset_code.code))
+        self.assertNotIn(raw_code, str(reset_code))
+        self.assertTrue(PasswordResetConfirmForm(self.user, {
+            'code': raw_code,
+            'new_password1': 'N3w-Strong-Password!',
+            'new_password2': 'N3w-Strong-Password!',
+        }).is_valid())
+
+
+class AdminAuditRegressionTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_superuser(
+            username='audit-admin',
+            email='audit-admin@example.com',
+            password='StrongAdminPassword123!',
+        )
+        self.apartment = Apartment.objects.create(
+            rooms=2,
+            floor=1,
+            area=60,
+            price=500000000,
+            availability=Apartment.Availability.RESERVED,
+        )
+        self.reservation = ApartmentReservation.objects.create(
+            apartment=self.apartment,
+            name='Test client',
+            email='client@example.com',
+            phone='+998901234567',
+            code_hash='unused',
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+
+    def test_changing_reservation_status_updates_apartment(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse('admin:app_apartmentreservation_change', args=[self.reservation.pk]),
+            {'status': ApartmentReservation.Status.EXPIRED, '_save': 'Save'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.availability, Apartment.Availability.AVAILABLE)
+        self.assertNotIn('status', ApartmentReservationAdmin.list_editable)
+
+    def test_password_reset_code_admin_does_not_expose_or_search_codes(self):
+        self.assertNotIn('code', PasswordResetCodeAdmin.list_display)
+        self.assertNotIn('code', PasswordResetCodeAdmin.search_fields)
 
 
 class TelegramFeatureTests(TestCase):
@@ -68,6 +118,18 @@ class TelegramFeatureTests(TestCase):
         buttons = [button for row in keyboard['keyboard'] for button in row]
         location_button = next(button for button in buttons if button.get('request_location'))
         self.assertEqual(location_button['text'], '📍 Yaqin manzilni topish')
+
+    @patch.object(TelegramBot, 'send_message')
+    @patch.object(TelegramBot, 'send_location')
+    def test_invalid_user_location_is_rejected(self, send_location, send_message):
+        self.bot.handle_nearest_location(123456, None, None)
+        send_message.assert_called_once()
+        send_location.assert_not_called()
+
+    def test_project_coordinates_must_be_valid_latitude_and_longitude(self):
+        home = Home(name='Invalid coordinate project', latitude=91, longitude=181)
+        with self.assertRaises(ValidationError):
+            home.full_clean()
 
     @patch.object(TelegramBot, 'send_location')
     @patch.object(TelegramBot, 'send_message')

@@ -1,6 +1,8 @@
 import secrets
 import uuid
 from datetime import timedelta
+from django.contrib.auth.hashers import make_password
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
@@ -80,14 +82,16 @@ class Home(models.Model):
 		decimal_places=6,
 		null=True,
 		blank=True,
-		verbose_name='Loyiha kengligi'
+		verbose_name='Loyiha kengligi',
+		validators=[MinValueValidator(-90), MaxValueValidator(90)],
 	)
 	longitude = models.DecimalField(
 		max_digits=9,
 		decimal_places=6,
 		null=True,
 		blank=True,
-		verbose_name='Loyiha uzunligi'
+		verbose_name='Loyiha uzunligi',
+		validators=[MinValueValidator(-180), MaxValueValidator(180)],
 	)
 	created_at = models.DateTimeField(auto_now_add=True)
 
@@ -206,8 +210,22 @@ class Client(models.Model):
 class SalesOffice(models.Model):
 	name = models.CharField(max_length=120, verbose_name='Ofis nomi')
 	address = models.CharField(max_length=240, verbose_name='Manzil')
-	latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, verbose_name='Kenglik')
-	longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, verbose_name='Uzunlik')
+	latitude = models.DecimalField(
+		max_digits=9,
+		decimal_places=6,
+		null=True,
+		blank=True,
+		verbose_name='Kenglik',
+		validators=[MinValueValidator(-90), MaxValueValidator(90)],
+	)
+	longitude = models.DecimalField(
+		max_digits=9,
+		decimal_places=6,
+		null=True,
+		blank=True,
+		verbose_name='Uzunlik',
+		validators=[MinValueValidator(-180), MaxValueValidator(180)],
+	)
 	sort_order = models.PositiveSmallIntegerField(default=0, verbose_name='Tartib raqami')
 
 	class Meta:
@@ -225,7 +243,7 @@ class PasswordResetCode(models.Model):
 		verbose_name='Foydalanuvchi'
 	)
 	email = models.EmailField(verbose_name='Elektron pochta')
-	code = models.CharField(max_length=6, verbose_name='6 xonali kod')
+	code = models.CharField(max_length=128, verbose_name='Tasdiqlash kodi xeshi')
 	created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqt')
 	expires_at = models.DateTimeField(verbose_name='Amal qilish muddati')
 	is_used = models.BooleanField(default=False, verbose_name='Ishlatilgan')
@@ -236,22 +254,24 @@ class PasswordResetCode(models.Model):
 		ordering = ('-created_at',)
 
 	def __str__(self):
-		return f"{self.email} - {self.code} ({'Ishlatilgan' if self.is_used else 'Faol'})"
+		return f"{self.email} ({'Ishlatilgan' if self.is_used else 'Faol'})"
 
 	@classmethod
 	def create_for_user(cls, user, email=None):
 		target_email = email or user.email
 		cls.objects.filter(user=user, is_used=False).update(is_used=True)
-		code = f"{secrets.randbelow(900000) + 100000}"
+		raw_code = f"{secrets.randbelow(900000) + 100000}"
 		now = timezone.now()
 		expires_at = now + timedelta(minutes=10)
-		return cls.objects.create(
+		reset_code = cls.objects.create(
 			user=user,
 			email=target_email,
-			code=code,
+			code=make_password(raw_code),
 			expires_at=expires_at,
 			is_used=False
 		)
+		reset_code.raw_code = raw_code
+		return reset_code
 
 	def is_expired(self):
 		return timezone.now() > self.expires_at

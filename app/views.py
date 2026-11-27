@@ -585,16 +585,17 @@ def profile_view(request):
 
 
 def send_password_reset_code_email(reset_code):
-	subject = f"Xon Saroy — Parolni almashtirish kodi: {reset_code.code}"
+	code = reset_code.raw_code
+	subject = "Xon Saroy — Parolni almashtirish kodi"
 	context = {
-		'code': reset_code.code,
+		'code': code,
 		'user': reset_code.user,
 		'expires_minutes': 10,
 	}
 	html_content = render_to_string('emails/password_reset_code.html', context)
 	text_content = (
 		f"Assalomu alaykum, {reset_code.user.username}!\n\n"
-		f"Xon Saroy hisobingiz parolini almashtirish uchun 6 xonali tasdiqlash kodi: {reset_code.code}\n\n"
+		f"Xon Saroy hisobingiz parolini almashtirish uchun 6 xonali tasdiqlash kodi: {code}\n\n"
 		f"Ushbu kod 10 daqiqa davomida amal qiladi.\n"
 		f"Agar parolni almashtirishni siz so'ramagan bo'lsangiz, ushbu xabarni e'tiborsiz qoldiring.\n\n"
 		f"Hurmat bilan,\nXon Saroy"
@@ -626,7 +627,7 @@ def send_password_reset_code_telegram(reset_code):
 		'🔐 <b>Xon Saroy — Parolni tiklash kodi</b>\n\n'
 		f'Assalomu alaykum, <b>{reset_code.user.username}</b>!\n'
 		f'Hisobingiz (<code>{reset_code.email}</code>) parolini almashtirish uchun 6 xonali tasdiqlash kodingiz:\n\n'
-		f'👉 <code>{reset_code.code}</code> 👈\n\n'
+		f'👉 <code>{reset_code.raw_code}</code> 👈\n\n'
 		'⏱ Ushbu kod <b>10 daqiqa</b> davomida amal qiladi.\n'
 		'Agar siz ushbu amalni bajarmagan bo‘lsangiz, xabarga e’tibor bermang.'
 	)

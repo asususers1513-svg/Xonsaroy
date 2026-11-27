@@ -52,19 +52,23 @@ class ApartmentReservationAdmin(admin.ModelAdmin):
 	list_filter = ('status', 'created_at')
 	search_fields = ('name', 'email', 'phone', 'apartment__project__name')
 	readonly_fields = ('public_id', 'apartment', 'name', 'email', 'phone', 'code_hash', 'attempts', 'created_at', 'expires_at', 'confirmed_at')
-	list_editable = ('status',)
 	actions = ('confirm_reservation', 'cancel_reservation')
 
 	def save_model(self, request, obj, form, change):
 		super().save_model(request, obj, form, change)
-		obj.apartment.availability = (
-			obj.apartment.Availability.RESERVED
-			if obj.status in (obj.Status.PENDING, obj.Status.CONFIRMED)
-			else obj.apartment.Availability.AVAILABLE
-			if obj.status == obj.Status.EXPIRED
-			else obj.apartment.availability
-		)
-		obj.apartment.save(update_fields=['availability'])
+		self._sync_apartment_availability(obj)
+
+	def _sync_apartment_availability(self, reservation):
+		apartment = reservation.apartment
+		if reservation.status in (reservation.Status.PENDING, reservation.Status.CONFIRMED):
+			if apartment.availability != apartment.Availability.SOLD:
+				apartment.availability = apartment.Availability.RESERVED
+		elif (
+			reservation.status == reservation.Status.EXPIRED
+			and apartment.availability == apartment.Availability.RESERVED
+		):
+			apartment.availability = apartment.Availability.AVAILABLE
+		apartment.save(update_fields=['availability'])
 
 	@admin.action(description='Tanlangan bronni tasdiqlash')
 	def confirm_reservation(self, request, queryset):
@@ -74,8 +78,7 @@ class ApartmentReservationAdmin(admin.ModelAdmin):
 			reservation.status = reservation.Status.CONFIRMED
 			reservation.confirmed_at = now
 			reservation.save(update_fields=['status', 'confirmed_at'])
-			reservation.apartment.availability = reservation.apartment.Availability.RESERVED
-			reservation.apartment.save(update_fields=['availability'])
+			self._sync_apartment_availability(reservation)
 			updated += 1
 		self.message_user(request, f'{updated} ta bron tasdiqlandi.')
 
@@ -87,8 +90,7 @@ class ApartmentReservationAdmin(admin.ModelAdmin):
 			reservation.status = reservation.Status.EXPIRED
 			reservation.confirmed_at = None
 			reservation.save(update_fields=['status', 'confirmed_at'])
-			reservation.apartment.availability = reservation.apartment.Availability.AVAILABLE
-			reservation.apartment.save(update_fields=['availability'])
+			self._sync_apartment_availability(reservation)
 			updated += 1
 		self.message_user(request, f'{updated} ta bron bekor qilindi.')
 
@@ -116,9 +118,9 @@ class SalesOfficeAdmin(admin.ModelAdmin):
 
 @admin.register(PasswordResetCode)
 class PasswordResetCodeAdmin(admin.ModelAdmin):
-	list_display = ('user', 'email', 'code', 'created_at', 'expires_at', 'is_used', 'is_expired')
+	list_display = ('user', 'email', 'created_at', 'expires_at', 'is_used', 'is_expired')
 	list_filter = ('is_used', 'created_at')
-	search_fields = ('email', 'code', 'user__username')
+	search_fields = ('email', 'user__username')
 	readonly_fields = ('user', 'email', 'code', 'created_at', 'expires_at')
 
 

@@ -36,7 +36,14 @@ SECRET_KEY=<generated-secret>
 ALLOWED_HOSTS=yourusername.pythonanywhere.com
 CSRF_TRUSTED_ORIGINS=https://yourusername.pythonanywhere.com
 DJANGO_ADMIN_PATH=<private-random-path>
+SECURE_SSL_REDIRECT=True
+SECURE_HSTS_SECONDS=3600
 ```
+
+`SECRET_KEY` kamida 50 belgidan iborat, tasodifiy va `django-insecure-` bilan
+boshlanmaydigan bo‘lishi shart. Production'da HTTPS redirect yoqiladi va HSTS
+bir soatga faollashadi; domeningizda HTTPS ishlayotganini tekshiring. HSTS
+subdomenlarga tatbiq qilinmaydi va preload yoqilmagan.
 
 Admin sahifasining maxsus manzilini terminalda yarating:
 

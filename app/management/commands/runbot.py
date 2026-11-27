@@ -1340,8 +1340,25 @@ class TelegramBot:
             self.send_message(chat_id, "Sotuv ofisi topilmadi.")
 
     def handle_nearest_location(self, chat_id, latitude, longitude):
-        user_lat = float(latitude)
-        user_lng = float(longitude)
+        try:
+            user_lat = float(latitude)
+            user_lng = float(longitude)
+        except (TypeError, ValueError):
+            user_lat = user_lng = float('nan')
+        if (
+            not math.isfinite(user_lat)
+            or not math.isfinite(user_lng)
+            or not -90 <= user_lat <= 90
+            or not -180 <= user_lng <= 180
+        ):
+            lang = self.get_lang(chat_id)
+            error = {
+                'uz': "Lokatsiya koordinatalari noto'g'ri. Qaytadan yuboring.",
+                'ru': 'Некорректные координаты. Отправьте геолокацию еще раз.',
+                'en': 'Invalid location coordinates. Please share your location again.',
+            }
+            self.send_message(chat_id, error.get(lang, error['uz']))
+            return
 
         def distance_km(lat, lng):
             earth_radius = 6371
@@ -1353,6 +1370,7 @@ class TelegramBot:
                 math.sin(delta_lat / 2) ** 2
                 + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lng / 2) ** 2
             )
+            a = min(1.0, max(0.0, a))
             return earth_radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         nearest_office = None

@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from .models import User, PasswordResetCode
@@ -167,10 +168,10 @@ class PasswordResetConfirmForm(forms.Form):
 
 		reset_code = PasswordResetCode.objects.filter(
 			user=self.user,
-			code=code
+			is_used=False,
 		).order_by('-created_at').first()
 
-		if not reset_code:
+		if not reset_code or not check_password(code, reset_code.code):
 			raise forms.ValidationError('Kiritilgan 6 xonali tasdiqlash kodi noto‘g‘ri.')
 
 		if reset_code.is_used:
